@@ -7,6 +7,15 @@ const { searchAllSites } = require('./scraper');
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
+// 一時画像ストア（メモリ内、5分TTL）
+const tempImages = new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, data] of tempImages) {
+    if (now - data.timestamp > 5 * 60 * 1000) tempImages.delete(id);
+  }
+}, 60 * 1000);
+
 // 静的ファイル配信
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -25,35 +34,37 @@ app.post('/api/parse-pdf', upload.single('pdf'), async (req, res) => {
 });
 
 // ============================================================
+// 一時画像の配信エンドポイント（Google Lens用）
+// ============================================================
+app.get('/temp/:id', (req, res) => {
+  const data = tempImages.get(req.params.id);
+  if (!data) return res.status(404).send('Not found');
+  res.set('Content-Type', data.mimetype);
+  res.send(data.buffer);
+});
+
+// ============================================================
 // API: Google Lens プロキシ
-// ブラウザからのクロスオリジンform送信はセキュリティでブロックされるため
-// サーバー経由でlens.google.comにPOSTしリダイレクト先URLを返す
+// 画像をサーバーに一時保存して公開URLを発行し、
+// uploadbyurl方式でユーザーのブラウザセッションからLensを開く
 // ============================================================
 app.post('/api/lens-proxy', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: '画像が必要です' });
 
-    const blob = new Blob([req.file.buffer], { type: req.file.mimetype || 'image/png' });
-    const form = new FormData();
-    form.append('encoded_image', blob, 'product.png');
-
-    const lensRes = await fetch('https://lens.google.com/v3/upload', {
-      method: 'POST',
-      body: form,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
-        'Accept-Language': 'ja,en;q=0.5',
-      },
-      redirect: 'manual',
+    const id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    tempImages.set(id, {
+      buffer: req.file.buffer,
+      mimetype: req.file.mimetype || 'image/png',
+      timestamp: Date.now(),
     });
 
-    const location = lensRes.headers.get('location');
-    if (location) {
-      res.json({ url: location });
-    } else {
-      res.status(502).json({ error: 'Google Lensからリダイレクト先を取得できませんでした (status: ' + lensRes.status + ')' });
-    }
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.get('host');
+    const imageUrl = `${protocol}://${host}/temp/${id}`;
+    const lensUrl = `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(imageUrl)}`;
+
+    res.json({ url: lensUrl });
   } catch (e) {
     console.error('Lens proxy error:', e);
     res.status(500).json({ error: e.message });
