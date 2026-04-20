@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オークション仕入れ 価格チェッカー</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #242836; --border: #2e3345;
+    --accent: #6c5ce7; --accent-light: #a29bfe; --text: #e8e8ef; --text-dim: #8b8fa3;
+    --green: #00b894; --orange: #fdcb6e; --red: #e17055; --blue: #74b9ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+  .header { text-align: center; margin-bottom: 32px; }
+  .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .header p { color: var(--text-dim); font-size: 14px; }
+
+  /* Drop Zone */
+  .drop-zone {
+    border: 2px dashed var(--border); border-radius: 16px; padding: 48px 24px;
+    text-align: center; cursor: pointer; transition: all 0.3s; background: var(--surface); margin-bottom: 28px;
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: rgba(108,92,231,0.08); }
+  .drop-zone-icon { font-size: 40px; margin-bottom: 12px; }
+  .drop-zone-text { font-size: 15px; color: var(--text-dim); }
+  .drop-zone-text strong { color: var(--accent-light); }
+  .drop-zone input { display: none; }
+
+  /* Loading */
+  .loading { text-align: center; padding: 40px; display: none; }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--text-dim); font-size: 14px; }
+
+  /* Result */
+  .result { display: none; }
+
+  /* Product Card */
+  .product-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 20px; }
+  .product-top { display: flex; gap: 24px; padding: 24px; }
+  .product-image { flex-shrink: 0; width: 200px; height: 200px; border-radius: 12px; overflow: hidden; background: var(--surface2); display: flex; align-items: center; justify-content: center; }
+  .product-image img { width: 100%; height: 100%; object-fit: contain; }
+  .product-info { flex: 1; min-width: 0; }
+  .product-brand { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent-light); margin-bottom: 4px; }
+  .product-name { font-size: 20px; font-weight: 700; margin-bottom: 12px; line-height: 1.3; }
+  .product-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .meta-tag { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 4px 12px; font-size: 12px; color: var(--text-dim); }
+  .meta-tag span { color: var(--text); font-weight: 600; }
+  .price-row { display: flex; gap: 12px; padding: 0 24px 24px; flex-wrap: wrap; }
+  .price-box { flex: 1; min-width: 140px; background: var(--surface2); border-radius: 12px; padding: 14px 16px; text-align: center; }
+  .price-box-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+  .price-box-value { font-size: 20px; font-weight: 700; }
+  .price-box-value.start { color: var(--blue); }
+  .condition-bar { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .condition-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; }
+  .condition-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .condition-dot.A { background: var(--green); } .condition-dot.B { background: var(--orange); } .condition-dot.C { background: var(--red); }
+  .damage-text { font-size: 12px; color: var(--text-dim); flex: 1; }
+
+  /* ===== Price Summary (NEW) ===== */
+  .price-summary {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; margin-bottom: 20px;
+  }
+  .price-summary h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .price-summary-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px;
+  }
+  .summary-card {
+    background: var(--surface2); border-radius: 12px; padding: 16px; text-align: center;
+  }
+  .summary-card .label { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+  .summary-card .value { font-size: 24px; font-weight: 800; }
+  .summary-card .source { font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+  .summary-card .source a { color: var(--accent-light); text-decoration: none; }
+  .summary-card .source a:hover { text-decoration: underline; }
+  .summary-card.min .value { color: var(--green); }
+  .summary-card.max .value { color: var(--red); }
+  .summary-card.avg .value { color: var(--blue); }
+  .summary-card.median .value { color: var(--orange); }
+  .price-searching { text-align: center; padding: 20px; color: var(--text-dim); font-size: 14px; }
+  .price-searching .spinner { width: 28px; height: 28px; margin: 0 auto 8px; }
+
+  /* Site Breakdown */
+  .site-breakdown { margin-top: 16px; }
+  .site-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+    background: var(--surface2); border-radius: 10px; margin-bottom: 8px;
+  }
+  .site-row .site-name-col { width: 120px; font-weight: 600; font-size: 13px; flex-shrink: 0; }
+  .site-row .site-count { font-size: 12px; color: var(--text-dim); width: 60px; flex-shrink: 0; }
+  .site-row .site-range { flex: 1; font-size: 14px; font-weight: 600; }
+  .site-row .site-range .low { color: var(--green); }
+  .site-row .site-range .high { color: var(--red); }
+  .site-row .site-error { color: var(--red); font-size: 12px; }
+  .site-row .site-empty { color: var(--text-dim); font-size: 12px; }
+
+  /* Image Search */
+  .image-search-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+  .image-search-section h2 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .image-search-section > p { font-size: 13px; color: var(--text-dim); margin-bottom: 18px; }
+  .image-search-layout { display: flex; gap: 24px; align-items: flex-start; }
+  .image-search-preview { flex-shrink: 0; width: 260px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .image-search-preview img { width: 100%; display: block; }
+  .image-search-actions { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .img-action-btn {
+    display: flex; align-items: center; gap: 12px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; color: var(--text); font-size: 14px; cursor: pointer;
+    transition: all 0.2s; text-decoration: none; font-family: inherit; width: 100%; text-align: left;
+  }
+  .img-action-btn:hover { border-color: var(--accent); background: rgba(108,92,231,0.1); transform: translateY(-1px); }
+  .img-action-btn .btn-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; flex-shrink: 0; }
+  .img-action-btn .btn-info { flex: 1; }
+  .img-action-btn .btn-name { font-weight: 600; font-size: 14px; }
+  .img-action-btn .btn-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .img-action-btn .arrow { color: var(--text-dim); font-size: 18px; }
+  .copy-success { color: var(--green) !important; transition: color 0.3s; }
+
+  /* Search Links */
+  .search-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+  .search-section h2 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .search-section p { font-size: 13px; color: var(--text-dim); margin-bottom: 18px; }
+  .search-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+  .search-link {
+    display: flex; align-items: center; gap: 12px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; text-decoration: none; color: var(--text); transition: all 0.2s; font-size: 14px;
+  }
+  .search-link:hover { border-color: var(--accent); background: rgba(108,92,231,0.1); transform: translateY(-1px); }
+  .search-link .site-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; flex-shrink: 0; }
+  .search-link .site-info { flex: 1; min-width: 0; }
+  .search-link .site-name { font-weight: 600; font-size: 14px; }
+  .search-link .site-desc { font-size: 11px; color: var(--text-dim); }
+  .search-link .arrow { color: var(--text-dim); font-size: 18px; }
+  .mercari-bg { background: #ff4444; color: #fff; }
+  .yahoo-bg { background: #ff0033; color: #fff; }
+  .rakuten-bg { background: #bf0000; color: #fff; }
+  .google-bg { background: #4285f4; color: #fff; }
+  .aucfan-bg { background: #0099cc; color: #fff; }
+
+  .reset-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 20px; color: var(--text); font-size: 14px; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
+  .reset-btn:hover { border-color: var(--accent); }
+
+  @media (max-width: 600px) {
+    .product-top { flex-direction: column; align-items: center; }
+    .product-image { width: 160px; height: 160px; }
+    .product-info { text-align: center; }
+    .product-meta { justify-content: center; }
+    .price-row { flex-direction: column; }
+    .condition-bar { flex-direction: column; align-items: flex-start; }
+    .image-search-layout { flex-direction: column; }
+    .image-search-preview { width: 100%; max-width: 300px; margin: 0 auto; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>オークション仕入れ 価格チェッカー</h1>
+    <p>出品商品詳細PDFをアップロード → 市場価格を自動取得して表示します</p>
+  </div>
+
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-zone-icon">📄</div>
+    <div class="drop-zone-text">出品商品詳細PDFをここにドラッグ＆ドロップ<br>または <strong>クリックして選択</strong></div>
+    <input type="file" id="fileInput" accept=".pdf">
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">PDFを解析中...</div>
+  </div>
+
+  <div class="result" id="result">
+    <!-- Product Card -->
+    <div class="product-card">
+      <div class="product-top">
+        <div class="product-image" id="productImage"><div style="color:var(--text-dim);font-size:13px;">画像なし</div></div>
+        <div class="product-info">
+          <div class="product-brand" id="brandName">-</div>
+          <div class="product-name" id="productName">-</div>
+          <div class="product-meta" id="productMeta"></div>
+        </div>
+      </div>
+      <div class="price-row" id="priceRow"></div>
+      <div class="condition-bar" id="conditionBar"></div>
+    </div>
+
+    <!-- Price Summary (API results) -->
+    <div class="price-summary" id="priceSummary">
+      <h2>💰 市場価格サマリー</h2>
+      <div class="price-searching" id="priceSearching">
+        <div class="spinner"></div>
+        <div>各サイトから価格を取得中...（10〜20秒ほどかかります）</div>
+      </div>
+      <div id="priceSummaryContent" style="display:none;"></div>
+    </div>
+
+    <!-- Image Search -->
+    <div class="image-search-section" id="imageSearchSection" style="display:none;">
+      <h2>📷 画像サイト調査</h2>
+      <p>PDFから抽出した商品画像で直接検索。色・形状から正確に商品を特定できます。</p>
+      <div class="image-search-layout">
+        <div class="image-search-preview" id="imageSearchPreview">
+          <img id="searchableImage" src="" alt="商品画像">
+        </div>
+        <div class="image-search-actions" id="imageSearchActions"></div>
+      </div>
+    </div>
+
+    <!-- Manual Search Links -->
+    <div class="search-section">
+      <h2>🔍 各サイトで確認する</h2>
+      <p>各サイトで現在の販売価格・相場を確認できます（新しいタブで開きます）</p>
+      <div class="search-grid" id="searchGrid"></div>
+    </div>
+
+    <button class="reset-btn" id="resetBtn">← 別のPDFを読み込む</button>
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const loading = document.getElementById('loading');
+const loadingText = document.getElementById('loadingText');
+const resultDiv = document.getElementById('result');
+const resetBtn = document.getElementById('resetBtn');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => { if (e.target.files[0]) processFile(e.target.files[0]); });
+resetBtn.addEventListener('click', () => { resultDiv.style.display = 'none'; dropZone.style.display = 'block'; fileInput.value = ''; });
+
+async function processFile(file) {
+  dropZone.style.display = 'none';
+  loading.style.display = 'block';
+  resultDiv.style.display = 'none';
+  loadingText.textContent = 'PDFを解析中...';
+
+  try {
+    // 1) PDF.jsで画像抽出（クライアント側）
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(1);
+    const imageDataUrl = await extractImage(page);
+
+    // 2) サーバーにPDFを送って商品情報を解析
+    const formData = new FormData();
+    formData.append('pdf', file);
+    const parseRes = await fetch('/api/parse-pdf', { method: 'POST', body: formData });
+    const parseData = await parseRes.json();
+
+    if (!parseData.success) throw new Error(parseData.error);
+
+    const data = parseData.product;
+    renderProductCard(data, imageDataUrl);
+    renderImageSearch(data, imageDataUrl);
+    renderSearchLinks(data);
+
+    loading.style.display = 'none';
+    resultDiv.style.display = 'block';
+
+    // 3) 価格検索を非同期で実行
+    searchPrices(data.searchQuery);
+  } catch (err) {
+    console.error(err);
+    alert('PDFの解析に失敗しました: ' + err.message);
+    dropZone.style.display = 'block';
+    loading.style.display = 'none';
+  }
+}
+
+// ============================================================
+// 価格検索（サーバーAPIを呼ぶ）
+// ============================================================
+async function searchPrices(query) {
+  const searching = document.getElementById('priceSearching');
+  const content = document.getElementById('priceSummaryContent');
+  searching.style.display = 'block';
+  content.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/search-prices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+    renderPriceSummary(data.results);
+  } catch (e) {
+    content.innerHTML = `<div style="color:var(--red);text-align:center;padding:20px;">価格取得に失敗しました: ${e.message}<br>下の手動リンクから各サイトで確認してください。</div>`;
+    content.style.display = 'block';
+    searching.style.display = 'none';
+  }
+}
+
+function renderPriceSummary(results) {
+  const searching = document.getElementById('priceSearching');
+  const content = document.getElementById('priceSummaryContent');
+  searching.style.display = 'none';
+
+  let html = '';
+  if (results.summary) {
+    const s = results.summary;
+    html += `<div class="price-summary-grid">
+      <div class="summary-card min">
+        <div class="label">最安値</div>
+        <div class="value">¥${s.minPrice.toLocaleString()}</div>
+        <div class="source"><a href="${s.minSource.url}" target="_blank">${s.minSource.site}</a></div>
+      </div>
+      <div class="summary-card max">
+        <div class="label">最高値</div>
+        <div class="value">¥${s.maxPrice.toLocaleString()}</div>
+        <div class="source"><a href="${s.maxSource.url}" target="_blank">${s.maxSource.site}</a></div>
+      </div>
+      <div class="summary-card avg">
+        <div class="label">平均価格</div>
+        <div class="value">¥${s.avgPrice.toLocaleString()}</div>
+        <div class="source">${s.totalItems}件のデータ</div>
+      </div>
+      <div class="summary-card median">
+        <div class="label">中央値</div>
+        <div class="value">¥${s.medianPrice.toLocaleString()}</div>
+        <div class="source">価格帯の中間</div>
+      </div>
+    </div>`;
+  } else {
+    html += '<div style="text-align:center;color:var(--text-dim);padding:16px;">自動取得できた価格データがありませんでした。下の手動リンクから各サイトで確認してください。</div>';
+  }
+
+  // サイト別内訳
+  html += '<div class="site-breakdown">';
+  results.sites.forEach(site => {
+    const prices = site.items.map(i => i.price).filter(p => p > 0);
+    html += `<div class="site-row">
+      <div class="site-name-col">${site.site}</div>`;
+    if (site.error) {
+      html += `<div class="site-error">取得失敗</div>`;
+    } else if (prices.length === 0) {
+      html += `<div class="site-empty">データなし</div>`;
+    } else {
+      const min = Math.min(...prices);
+      const max = Math.max(...prices);
+      html += `<div class="site-count">${prices.length}件</div>
+        <div class="site-range"><span class="low">¥${min.toLocaleString()}</span> 〜 <span class="high">¥${max.toLocaleString()}</span></div>`;
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+
+  content.innerHTML = html;
+  content.style.display = 'block';
+}
+
+// ============================================================
+// 商品カード描画
+// ============================================================
+function renderProductCard(data, imageDataUrl) {
+  document.getElementById('brandName').textContent = data.makerNormalized || data.maker || '-';
+  document.getElementById('productName').textContent = data.productNameNormalized || data.productName || '商品名不明';
+
+  const imgDiv = document.getElementById('productImage');
+  if (imageDataUrl) {
+    imgDiv.innerHTML = `<img src="${imageDataUrl}" alt="商品画像">`;
+  }
+
+  const metaDiv = document.getElementById('productMeta');
+  metaDiv.innerHTML = '';
+  [
+    { label: 'ライン', val: data.lineType },
+    { label: '形状', val: data.shape },
+    { label: '型番', val: data.modelNumber },
+    { label: '製造番号', val: data.serial },
+    { label: '色', val: data.color },
+    { label: '受付番号', val: data.receiptNo },
+  ].forEach(m => {
+    if (m.val && m.val !== '-') {
+      const tag = document.createElement('div');
+      tag.className = 'meta-tag';
+      tag.innerHTML = `${m.label}: <span>${m.val}</span>`;
+      metaDiv.appendChild(tag);
+    }
+  });
+
+  const priceRow = document.getElementById('priceRow');
+  priceRow.innerHTML = '';
+  if (data.startPrice) {
+    priceRow.innerHTML = `<div class="price-box"><div class="price-box-label">スタート価格</div><div class="price-box-value start">¥${Number(data.startPrice).toLocaleString()}</div></div>`;
+  }
+
+  const condBar = document.getElementById('conditionBar');
+  condBar.innerHTML = '';
+  if (data.evaluation) {
+    const gc = data.grade.startsWith('A') ? 'A' : data.grade.startsWith('B') ? 'B' : 'C';
+    condBar.innerHTML += `<div class="condition-badge"><div class="condition-dot ${gc}"></div>評価: ${data.evaluation}</div>`;
+  }
+  if (data.damage) {
+    condBar.innerHTML += `<div class="damage-text">📝 ${data.damage}</div>`;
+  }
+}
+
+// ============================================================
+// 画像検索セクション
+// ============================================================
+function renderImageSearch(data, imageDataUrl) {
+  const section = document.getElementById('imageSearchSection');
+  const actions = document.getElementById('imageSearchActions');
+  if (!imageDataUrl) { section.style.display = 'none'; return; }
+
+  section.style.display = 'block';
+  document.getElementById('searchableImage').src = imageDataUrl;
+  actions.innerHTML = '';
+
+  function dataUrlToFile(dataUrl, filename) {
+    const arr = dataUrl.split(','); const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]); const u8 = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) u8[i] = bstr.charCodeAt(i);
+    return new File([u8], filename, { type: mime });
+  }
+
+  // Google Lens
+  const lensBtn = document.createElement('button');
+  lensBtn.className = 'img-action-btn';
+  lensBtn.innerHTML = `<div class="btn-icon google-bg" style="font-size:20px;">🔍</div><div class="btn-info"><div class="btn-name">Google レンズで検索</div><div class="btn-desc">この画像で類似商品・価格を自動検索します</div></div><div class="arrow">→</div>`;
+  lensBtn.addEventListener('click', () => {
+    const file = dataUrlToFile(imageDataUrl, 'product.png');
+    const form = document.createElement('form');
+    form.method = 'POST'; form.enctype = 'multipart/form-data';
+    form.action = 'https://lens.google.com/v3/upload'; form.target = '_blank'; form.style.display = 'none';
+    const input = document.createElement('input'); input.type = 'file'; input.name = 'encoded_image';
+    const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+    form.appendChild(input); document.body.appendChild(form); form.submit();
+    setTimeout(() => document.body.removeChild(form), 1000);
+  });
+  actions.appendChild(lensBtn);
+
+  // Keyword image search
+  const brandForImg = data.makerNormalized || data.maker || '';
+  const imgQuery = [brandForImg, (data.lineType || '').replace(/[（）()]/g, '').replace(/バッグ/g, '').trim(), data.shape || ''].filter(Boolean).join(' ');
+  const kwBtn = document.createElement('a');
+  kwBtn.className = 'img-action-btn'; kwBtn.href = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(imgQuery)}`; kwBtn.target = '_blank';
+  kwBtn.innerHTML = `<div class="btn-icon google-bg">🖼</div><div class="btn-info"><div class="btn-name">キーワード画像検索</div><div class="btn-desc">「${imgQuery}」の画像一覧で見比べ</div></div><div class="arrow">→</div>`;
+  actions.appendChild(kwBtn);
+
+  // Copy
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'img-action-btn';
+  copyBtn.innerHTML = `<div class="btn-icon" style="background:var(--accent);color:#fff;">📋</div><div class="btn-info"><div class="btn-name" id="copyBtnText">画像をコピー</div><div class="btn-desc">メルカリ等の検索画面に貼り付け用</div></div>`;
+  copyBtn.addEventListener('click', async () => {
+    try {
+      const res = await fetch(imageDataUrl); const blob = await res.blob();
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': new Blob([blob], { type: 'image/png' }) })]);
+      const txt = document.getElementById('copyBtnText');
+      txt.textContent = 'コピーしました!'; txt.classList.add('copy-success');
+      setTimeout(() => { txt.textContent = '画像をコピー'; txt.classList.remove('copy-success'); }, 2000);
+    } catch(e) { const a = document.createElement('a'); a.href = imageDataUrl; a.download = 'product-image.png'; a.click(); }
+  });
+  actions.appendChild(copyBtn);
+}
+
+// ============================================================
+// 手動検索リンク
+// ============================================================
+function renderSearchLinks(data) {
+  const grid = document.getElementById('searchGrid');
+  grid.innerHTML = '';
+  const brand = data.makerNormalized || data.maker || '';
+  const line = data.lineType ? data.lineType.replace(/[（）()]/g, ' ').replace(/バッグ/g, '').trim() : '';
+  const shape = data.shape || '';
+  const modelNo = data.modelNumber || '';
+  const q = [brand, line, shape].filter(Boolean).join(' ');
+
+  const sites = [];
+  if (modelNo) sites.push({ name: 'Google（型番検索）', desc: `型番「${modelNo}」で定価・詳細を検索`, icon: 'G', cls: 'google-bg', url: `https://www.google.com/search?q=${encodeURIComponent(brand+' '+modelNo+' 定価')}` });
+  sites.push(
+    { name: 'メルカリ', desc: '販売中・sold両方の相場確認', icon: 'M', cls: 'mercari-bg', url: `https://jp.mercari.com/search?keyword=${encodeURIComponent(q)}` },
+    { name: 'メルカリ（SOLD）', desc: '成約済みの実勢価格を確認', icon: 'M', cls: 'mercari-bg', url: `https://jp.mercari.com/search?keyword=${encodeURIComponent(q)}&status=sold_out` },
+    { name: 'ヤフオク!', desc: '現在出品中のオークション', icon: 'Y', cls: 'yahoo-bg', url: `https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(q)}&auccat=0` },
+    { name: 'ヤフオク!（落札相場）', desc: '過去の落札価格データ', icon: 'Y', cls: 'yahoo-bg', url: `https://auctions.yahoo.co.jp/closedsearch/closedsearch?p=${encodeURIComponent(q)}&auccat=0` },
+    { name: 'オークファン（相場概要）', desc: '平均落札価格・価格推移グラフを表示', icon: 'AF', cls: 'aucfan-bg', url: `https://aucfan.com/intro/q-${encodeURIComponent(q)}/` },
+    { name: 'オークファン（落札一覧）', desc: '過去の落札データを一覧で確認', icon: 'AF', cls: 'aucfan-bg', url: `https://aucfan.com/search1/q-${encodeURIComponent(q)}/` },
+    { name: '楽天市場', desc: 'EC販売価格の確認', icon: 'R', cls: 'rakuten-bg', url: `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(q)}/` },
+    { name: 'Google ショッピング', desc: '横断的な価格比較', icon: 'G', cls: 'google-bg', url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(q)}` },
+  );
+
+  sites.forEach(s => {
+    const a = document.createElement('a');
+    a.className = 'search-link'; a.href = s.url; a.target = '_blank'; a.rel = 'noopener';
+    a.innerHTML = `<div class="site-icon ${s.cls}">${s.icon}</div><div class="site-info"><div class="site-name">${s.name}</div><div class="site-desc">${s.desc}</div></div><div class="arrow">→</div>`;
+    grid.appendChild(a);
+  });
+}
+
+// ============================================================
+// PDF画像抽出（クライアント側 PDF.js）
+// ============================================================
+async function extractImage(page) {
+  try {
+    const ops = await page.getOperatorList();
+    const imgKeys = [];
+    for (let i = 0; i < ops.fnArray.length; i++) {
+      if (ops.fnArray[i] === pdfjsLib.OPS.paintImageXObject || ops.fnArray[i] === pdfjsLib.OPS.paintJpegXObject) {
+        imgKeys.push(ops.argsArray[i][0]);
+      }
+    }
+    if (imgKeys.length === 0) return null;
+    let bestImg = null, bestSize = 0;
+    for (const key of imgKeys) {
+      try {
+        const img = await page.objs.get(key);
+        if (img && img.width && img.height && img.width * img.height > bestSize) {
+          bestSize = img.width * img.height; bestImg = img;
+        }
+      } catch(e) {}
+    }
+    if (!bestImg) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = bestImg.width; canvas.height = bestImg.height;
+    const ctx = canvas.getContext('2d');
+    if (bestImg.data) {
+      const clampedData = new Uint8ClampedArray(bestImg.data);
+      let imgData;
+      if (clampedData.length === bestImg.width * bestImg.height * 3) {
+        const rgba = new Uint8ClampedArray(bestImg.width * bestImg.height * 4);
+        for (let i = 0, j = 0; i < clampedData.length; i += 3, j += 4) {
+          rgba[j] = clampedData[i]; rgba[j+1] = clampedData[i+1]; rgba[j+2] = clampedData[i+2]; rgba[j+3] = 255;
+        }
+        imgData = new ImageData(rgba, bestImg.width, bestImg.height);
+      } else {
+        imgData = new ImageData(clampedData, bestImg.width, bestImg.height);
+      }
+      ctx.putImageData(imgData, 0, 0);
+    } else if (bestImg.bitmap) { ctx.drawImage(bestImg.bitmap, 0, 0); }
+    else return null;
+    return canvas.toDataURL('image/png');
+  } catch(e) { console.error('Image extraction error:', e); return null; }
+}
+</script>
+</body>
+</html>
