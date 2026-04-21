@@ -105,27 +105,47 @@ async function scrapeYahooAuctions(query) {
 }
 
 // ============================================================
-// 楽天市場
+// 楽天市場（公式API優先 / スクレイピングフォールバック）
 // ============================================================
 async function scrapeRakuten(query) {
   const results = { site: '楽天市場', items: [], error: null };
-  try {
-    const url = `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(query)}/`;
-    const html = await fetchWithTimeout(url, 25000);
-    const $ = cheerio.load(html);
+  const appId = process.env.RAKUTEN_APP_ID;
 
-    $('.searchresultitem').each((_, el) => {
-      // 価格: class名にハッシュが含まれるが "price--" という接頭辞は共通
-      const priceText = $(el).find('[class*="price--"]').not('[class*="unit"]').first().text();
-      const price = extractPrice(priceText);
-      // 商品名とURL: image-link-wrapperのhrefかtitleリンク
-      const linkEl = $(el).find('a[href*="rakuten"]').first();
-      const name = linkEl.attr('title') || linkEl.find('img').attr('alt') || query;
-      const link = linkEl.attr('href');
-      if (price > 0) {
-        results.items.push({ name: name.substring(0, 100), price, status: '販売中', url: link || url });
+  try {
+    if (appId) {
+      // ── 公式API（無料・IPアドレス制限なし）──
+      const url = `https://app.rakuten.co.jp/services/api/IchibaItem/Search/20170706` +
+        `?applicationId=${appId}&keyword=${encodeURIComponent(query)}&format=json&hits=30&sort=-reviewCount`;
+      const json = await fetchWithTimeout(url, 25000);
+      const data = JSON.parse(json);
+      if (data.Items) {
+        data.Items.forEach(({ Item }) => {
+          if (Item.itemPrice > 0) {
+            results.items.push({
+              name: Item.itemName.substring(0, 100),
+              price: Item.itemPrice,
+              status: '販売中',
+              url: Item.itemUrl,
+            });
+          }
+        });
       }
-    });
+    } else {
+      // ── スクレイピング（ローカル動作用フォールバック）──
+      const url = `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(query)}/`;
+      const html = await fetchWithTimeout(url, 25000);
+      const $ = cheerio.load(html);
+      $('.searchresultitem').each((_, el) => {
+        const priceText = $(el).find('[class*="price--"]').not('[class*="unit"]').first().text();
+        const price = extractPrice(priceText);
+        const linkEl = $(el).find('a[href*="rakuten"]').first();
+        const name = linkEl.attr('title') || linkEl.find('img').attr('alt') || query;
+        const link = linkEl.attr('href');
+        if (price > 0) {
+          results.items.push({ name: name.substring(0, 100), price, status: '販売中', url: link || url });
+        }
+      });
+    }
   } catch (e) {
     results.error = e.message;
   }
@@ -272,14 +292,17 @@ async function fetchWithTimeout(url, timeoutMs = 25000, ua) {
 
 // ============================================================
 // メインの検索関数：全サイトを並行で検索
+// query      = 広域クエリ（メルカリ・ヤフオク・オークフリー向け）
+// preciseQuery = 精密クエリ（楽天API・Yahooショッピング向け、省略時はqueryを使用）
 // ============================================================
-async function searchAllSites(query) {
+async function searchAllSites(query, preciseQuery) {
+  const pq = preciseQuery || query;
   const scrapers = [
     scrapeMercari(query),
     scrapeYahooAuctions(query),
-    scrapeRakuten(query),
+    scrapeRakuten(pq),        // 楽天は精密クエリ優先
     scrapeAucfree(query),
-    scrapeYahooShopping(query),
+    scrapeYahooShopping(pq),  // Yahooショッピングも精密クエリ優先
   ];
 
   const allResults = await Promise.allSettled(scrapers);

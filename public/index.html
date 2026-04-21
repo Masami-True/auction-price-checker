@@ -105,6 +105,9 @@
   .image-search-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
   .image-search-section h2 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
   .image-search-section > p { font-size: 13px; color: var(--text-dim); margin-bottom: 18px; }
+  .img-action-btn.ai-btn { border-color: var(--accent); background: rgba(108,92,231,0.12); }
+  .img-action-btn.ai-btn:hover { background: rgba(108,92,231,0.2); }
+  .ai-badge { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
   .image-search-layout { display: flex; gap: 24px; align-items: flex-start; }
   .image-search-preview { flex-shrink: 0; width: 260px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
   .image-search-preview img { width: 100%; display: block; }
@@ -270,8 +273,8 @@ async function processFile(file) {
     loading.style.display = 'none';
     resultDiv.style.display = 'block';
 
-    // 3) 価格検索を非同期で実行
-    searchPrices(data.searchQuery);
+    // 3) 価格検索を非同期で実行（広域クエリ＋精密クエリを両方送る）
+    searchPrices(data.searchQuery, data.preciseQuery);
   } catch (err) {
     console.error(err);
     alert('PDFの解析に失敗しました: ' + err.message);
@@ -283,7 +286,7 @@ async function processFile(file) {
 // ============================================================
 // 価格検索（サーバーAPIを呼ぶ）
 // ============================================================
-async function searchPrices(query) {
+async function searchPrices(query, preciseQuery) {
   const searching = document.getElementById('priceSearching');
   const content = document.getElementById('priceSummaryContent');
   searching.style.display = 'block';
@@ -293,11 +296,11 @@ async function searchPrices(query) {
     const res = await fetch('/api/search-prices', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query, preciseQuery }),
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
-    renderPriceSummary(data.results);
+    renderPriceSummary(data.results, query, preciseQuery);
   } catch (e) {
     content.innerHTML = `<div style="color:var(--red);text-align:center;padding:20px;">価格取得に失敗しました: ${e.message}<br>下の手動リンクから各サイトで確認してください。</div>`;
     content.style.display = 'block';
@@ -305,12 +308,16 @@ async function searchPrices(query) {
   }
 }
 
-function renderPriceSummary(results) {
+function renderPriceSummary(results, query, preciseQuery) {
   const searching = document.getElementById('priceSearching');
   const content = document.getElementById('priceSummaryContent');
   searching.style.display = 'none';
 
-  let html = '';
+  // 使用クエリの表示
+  let html = `<div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;padding:10px 14px;background:var(--surface2);border-radius:8px;">
+    📝 検索クエリ：<span style="color:var(--text);">${query}</span>
+    ${preciseQuery && preciseQuery !== query ? `／ 楽天・Yahoo: <span style="color:var(--accent-light);">${preciseQuery}</span>` : ''}
+  </div>`;
   if (results.summary) {
     const s = results.summary;
     html += `<div class="price-summary-grid">
@@ -429,6 +436,13 @@ function renderImageSearch(data, imageDataUrl) {
     return new File([u8], filename, { type: mime });
   }
 
+  // ── AI画像解析ボタン（最上部）──
+  const aiBtn = document.createElement('button');
+  aiBtn.className = 'img-action-btn ai-btn';
+  aiBtn.innerHTML = `<div class="btn-icon" style="background:var(--accent);color:#fff;font-size:16px;">✦</div><div class="btn-info"><div class="btn-name">AIで商品を特定して価格を調べる <span class="ai-badge">NEW</span></div><div class="btn-desc">画像からブランド・型番を自動認識 → 市場価格をその場で表示</div></div><div class="arrow">→</div>`;
+  aiBtn.addEventListener('click', () => analyzeImageAndSearch(imageDataUrl, aiBtn));
+  actions.appendChild(aiBtn);
+
   // Google Lens
   const lensBtn = document.createElement('button');
   lensBtn.className = 'img-action-btn';
@@ -515,6 +529,49 @@ function renderSearchLinks(data) {
     a.innerHTML = `<div class="site-icon ${s.cls}">${s.icon}</div><div class="site-info"><div class="site-name">${s.name}</div><div class="site-desc">${s.desc}</div></div><div class="arrow">→</div>`;
     grid.appendChild(a);
   });
+}
+
+// ============================================================
+// AI画像解析 → 価格検索（1クリックで完結）
+// ============================================================
+async function analyzeImageAndSearch(imageDataUrl, btn) {
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<div class="btn-icon" style="background:var(--accent);color:#fff;font-size:16px;">⏳</div><div class="btn-info"><div class="btn-name">AIが画像を解析中...</div><div class="btn-desc">ブランド・型番を特定しています</div></div>`;
+
+  // 価格サマリーをローディング状態に切り替え
+  const priceSummary = document.getElementById('priceSummary');
+  const searching = document.getElementById('priceSearching');
+  const content = document.getElementById('priceSummaryContent');
+  priceSummary.querySelector('h2').textContent = '💰 市場価格サマリー（AI画像解析）';
+  searching.style.display = 'block';
+  searching.querySelector('div:last-child').textContent = 'AIが商品を特定中...（10〜20秒ほどかかります）';
+  content.style.display = 'none';
+  priceSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  try {
+    const res = await fetch(imageDataUrl);
+    const blob = await res.blob();
+    const fd = new FormData();
+    fd.append('image', blob, 'product.png');
+
+    const apiRes = await fetch('/api/analyze-image', { method: 'POST', body: fd });
+    const data = await apiRes.json();
+    if (!data.success) throw new Error(data.error);
+
+    // 特定されたクエリを表示してから価格サマリーを描画
+    priceSummary.querySelector('h2').innerHTML = `💰 市場価格サマリー（AI画像解析）<br><span style="font-size:12px;font-weight:400;color:var(--accent-light);">検索クエリ: ${data.query}</span>`;
+    renderPriceSummary(data.results);
+
+    btn.innerHTML = `<div class="btn-icon" style="background:var(--green);color:#fff;font-size:16px;">✓</div><div class="btn-info"><div class="btn-name">解析完了</div><div class="btn-desc">検索クエリ: ${data.query}</div></div>`;
+    btn.disabled = false;
+  } catch (e) {
+    content.innerHTML = `<div style="color:var(--red);text-align:center;padding:20px;">AI解析に失敗しました: ${e.message}</div>`;
+    content.style.display = 'block';
+    searching.style.display = 'none';
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
 }
 
 // ============================================================

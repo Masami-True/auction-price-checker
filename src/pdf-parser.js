@@ -150,8 +150,18 @@ async function parsePDF(buffer) {
   result.color = (colorMatch && colorMatch[1].trim() !== '-') ? colorMatch[1].trim() : '';
 
   // 検索クエリを生成
+  // 基本クエリ: メーカー + ライン + 形状（幅広い結果を得るため）
   const line = result.lineType ? result.lineType.replace(/[（）()]/g, ' ').replace(/バッグ/g, '').trim() : '';
   result.searchQuery = [result.makerNormalized, line, result.shape].filter(Boolean).join(' ');
+
+  // 精密クエリ: 型番・色も加えた完全一致向け（型番がある場合のみ）
+  if (result.modelNumber) {
+    result.preciseQuery = [result.makerNormalized, result.modelNumber, result.color, result.shape]
+      .filter(Boolean).join(' ');
+  } else {
+    result.preciseQuery = [result.makerNormalized, line, result.color, result.shape]
+      .filter(Boolean).join(' ');
+  }
 
   return result;
 }
