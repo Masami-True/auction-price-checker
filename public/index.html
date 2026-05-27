@@ -900,8 +900,7 @@ function renderSearchLinks(data) {
   sites.push(
     { name: 'ヤフオク!', desc: `「${q}」で出品中を検索`, icon: 'Y', cls: 'yahoo-bg', url: `https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(q)}&auccat=0` },
     { name: 'ヤフオク!（落札相場）', desc: `「${q}」で過去の落札価格を確認`, icon: 'Y', cls: 'yahoo-bg', url: `https://auctions.yahoo.co.jp/closedsearch/closedsearch?p=${encodeURIComponent(q)}&auccat=0` },
-    { name: 'オークファン（相場概要）', desc: `「${q}」で平均落札価格・価格推移グラフを表示`, icon: 'AF', cls: 'aucfan-bg', url: `https://aucfan.com/search?q=${encodeURIComponent(q)}` },
-    { name: 'オークファン（落札一覧）', desc: `「${q}」で過去の落札データを一覧で確認`, icon: 'AF', cls: 'aucfan-bg', url: `https://aucfan.com/search1?q=${encodeURIComponent(q)}` },
+    { name: 'オークフリー（落札相場）', desc: `「${q}」で過去の落札データを確認`, icon: 'AF', cls: 'aucfan-bg', url: `https://aucfree.com/search?q=${encodeURIComponent(q)}` },
     { name: '楽天市場', desc: `「${precise}」でEC販売価格を確認`, icon: 'R', cls: 'rakuten-bg', url: `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(precise)}/` },
     { name: 'メルカリ', desc: `「${precise}」で販売中・sold両方の相場確認`, icon: 'M', cls: 'mercari-bg', url: `https://jp.mercari.com/search?keyword=${encodeURIComponent(precise)}` },
     { name: 'メルカリ（SOLD）', desc: `「${precise}」で成約済みの実勢価格を確認`, icon: 'M', cls: 'mercari-bg', url: `https://jp.mercari.com/search?keyword=${encodeURIComponent(precise)}&status=sold_out` },
