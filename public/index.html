@@ -336,6 +336,8 @@ function _ecoaucBookmarklet() {
   desc = desc.trim();
   var imgs = [];
   document.querySelectorAll('a[href*="assets.ecoauc.com/images"]').forEach(function(a) {
+    var slide = a.closest ? a.closest('.swiper-slide') : null;
+    if (slide && slide.classList.contains('swiper-slide-duplicate')) return;
     if (imgs.indexOf(a.href) < 0) imgs.push(a.href);
   });
   var sp = (txt.match(/開始価格[\s\S]*?¥\s*([\d,]+)/) || [])[1] || '';
