@@ -331,18 +331,33 @@ async function searchAllSites(query, preciseQuery) {
     'カルティエ': 'cartier', 'ブルガリ': 'bvlgari', 'ミュウミュウ': 'miu',
   };
 
-  function isRelevantItem(item, brandWord) {
+  function isRelevantItem(item, brandWord, queryWords) {
     if (!brandWord || brandWord.length < 2) return true;
     const name = (item.name || '').toLowerCase();
     const bl = brandWord.toLowerCase();
     const enAlt = BRAND_EN_MAP[brandWord] || null;
-    return name.includes(bl) || (enAlt && name.includes(enAlt));
+
+    // ① ブランド名が含まれていない → 除外
+    const hasBrand = name.includes(bl) || (enAlt && name.includes(enAlt));
+    if (!hasBrand) return false;
+
+    // ② 商品種別キーワード（長財布・バッグ・ベルト等）がクエリにあればその一致も確認
+    //    ただし種別語が見つからない場合はブランド一致だけで通す
+    const TYPE_WORDS = ['長財布','短財布','二つ折り','財布','バッグ','トート','ショルダー',
+      'ハンドバッグ','リュック','ポーチ','クラッチ','ベルト','スカーフ','ネクタイ',
+      'コインケース','キーケース','カードケース','手帳','ウォレット'];
+    const queryTypeWords = queryWords.filter(w => TYPE_WORDS.includes(w));
+    if (queryTypeWords.length === 0) return true; // 種別語なし → ブランド一致のみでOK
+
+    // クエリの種別語のうち少なくとも1つがitem名に含まれること
+    return queryTypeWords.some(w => name.includes(w));
   }
 
-  const brandWord = query.split(/\s+/)[0] || '';
+  const queryWords = query.split(/\s+/).filter(w => w.length > 1);
+  const brandWord = queryWords[0] || '';
   const allItems = sites.flatMap(s => s.items)
     .filter(i => i.price > 0)
-    .filter(i => isRelevantItem(i, brandWord));
+    .filter(i => isRelevantItem(i, brandWord, queryWords));
 
   // ¥1,000未満は1円スタートや送料のみ等の除外対象
   const PRICE_FLOOR = 1000;
