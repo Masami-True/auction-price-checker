@@ -340,15 +340,29 @@ function getImageFetchUrl(url) {
 // ============================================================
 function _ecoaucBookmarklet() {
   var APP = 'https://auction-price-checker.onrender.com';
+
+  // トースト表示
+  var toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;top:16px;right:16px;background:#6c5ce7;color:#fff;padding:12px 20px;border-radius:10px;z-index:99999;font-size:14px;font-family:sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.3);transition:opacity 0.3s;';
+  toast.textContent = '⏳ 価格チェッカーに送信中...';
+  document.body.appendChild(toast);
+
+  // ★ポップアップブロック対策：先にウィンドウを開いてからデータを送る
+  var win = window.open(APP, '_blank');
+  if (!win) {
+    toast.style.background = '#e17055';
+    toast.textContent = '❌ ポップアップがブロックされました。ブラウザのアドレスバー横のアイコンから許可してください。';
+    setTimeout(function() { toast.remove(); }, 6000);
+    return;
+  }
+
   var h1 = (document.querySelector('h1') || {}).innerText || '';
   var brand = h1.split(/[\s（(▼]/)[0] || '';
-  // ブランド名・コード・注意書きを除去してクリーンな商品名を作る
   var cleanName = h1
     .replace(/\([^)]+\)/g, '')
     .replace(/▼[^▼]*▼/g, '')
     .replace(new RegExp(brand + '\\s*', 'gi'), '')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/\s+/g, ' ').trim();
   var txt = document.body.innerText;
   var rank = (txt.match(/([A-S])\s*ランク/) || [])[1] || '';
   var desc = (txt.match(/〈商品説明〉[\r\n]+([\s\S]*?)(?=\n♥|\n開始価格)/) || [])[1] || '';
@@ -363,10 +377,7 @@ function _ecoaucBookmarklet() {
   sp = sp.replace(/,/g, '');
   var shape = (txt.match(/形状コード[\r\n]+([^\r\n]+)/) || [])[1] || '';
   shape = shape.trim();
-  // 検索クエリ：ブランド + 商品名の先頭3ワード（形状含む）
-  var keyWords = cleanName.split(/\s+/).filter(function(w) {
-    return w.length > 1;
-  }).slice(0, 3);
+  var keyWords = cleanName.split(/\s+/).filter(function(w) { return w.length > 1; }).slice(0, 3);
   var q = [brand].concat(keyWords).join(' ');
   var pq = [brand, cleanName].filter(Boolean).join(' ').substring(0, 60);
   var data = {
@@ -377,17 +388,45 @@ function _ecoaucBookmarklet() {
     images: imgs.slice(0, 10), startPrice: sp, shape: shape,
     searchQuery: q, preciseQuery: pq
   };
+
   fetch(APP + '/api/from-page', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
   }).then(function(r) { return r.json(); })
     .then(function(j) {
-      if (j.token) window.open(APP + '?token=' + j.token, '_blank');
-      else alert('エラー: データ送信失敗');
-    }).catch(function(e) { alert('エラー: ' + e.message); });
+      if (j.token) {
+        win.location.href = APP + '?token=' + j.token;
+        toast.style.background = '#00b894';
+        toast.textContent = '✅ 送信完了！新しいタブで開きます';
+      } else {
+        win.close();
+        toast.style.background = '#e17055';
+        toast.textContent = '❌ エラー: データ送信失敗';
+      }
+      setTimeout(function() { toast.remove(); }, 3000);
+    }).catch(function(e) {
+      win.close();
+      toast.style.background = '#e17055';
+      toast.textContent = '❌ エラー: ' + e.message + '（サーバー起動中なら再度クリック）';
+      setTimeout(function() { toast.remove(); }, 6000);
+    });
 }
 
 function _aucnetBookmarklet() {
   var APP = 'https://auction-price-checker.onrender.com';
+
+  var toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;top:16px;right:16px;background:#6c5ce7;color:#fff;padding:12px 20px;border-radius:10px;z-index:99999;font-size:14px;font-family:sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.3);';
+  toast.textContent = '⏳ 価格チェッカーに送信中...';
+  document.body.appendChild(toast);
+
+  var win = window.open(APP, '_blank');
+  if (!win) {
+    toast.style.background = '#e17055';
+    toast.textContent = '❌ ポップアップがブロックされました。アドレスバー横のアイコンから許可してください。';
+    setTimeout(function() { toast.remove(); }, 6000);
+    return;
+  }
+
   var txt = document.body.innerText;
   var h1el = document.querySelector('h1,.itemName,[class*="item-name"],[class*="product-name"]');
   var h1text = h1el ? h1el.innerText.trim() :
@@ -418,13 +457,27 @@ function _aucnetBookmarklet() {
     images: imgs.slice(0, 10), startPrice: sp, modelNumber: model,
     searchQuery: q, preciseQuery: pq
   };
+
   fetch(APP + '/api/from-page', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
   }).then(function(r) { return r.json(); })
     .then(function(j) {
-      if (j.token) window.open(APP + '?token=' + j.token, '_blank');
-      else alert('エラー');
-    }).catch(function(e) { alert('エラー: ' + e.message); });
+      if (j.token) {
+        win.location.href = APP + '?token=' + j.token;
+        toast.style.background = '#00b894';
+        toast.textContent = '✅ 送信完了！新しいタブで開きます';
+      } else {
+        win.close();
+        toast.style.background = '#e17055';
+        toast.textContent = '❌ エラー: データ送信失敗';
+      }
+      setTimeout(function() { toast.remove(); }, 3000);
+    }).catch(function(e) {
+      win.close();
+      toast.style.background = '#e17055';
+      toast.textContent = '❌ エラー: ' + e.message + '（サーバー起動中なら再度クリック）';
+      setTimeout(function() { toast.remove(); }, 6000);
+    });
 }
 
 // ブックマークレットのhrefをセット
