@@ -329,7 +329,13 @@ function _ecoaucBookmarklet() {
   var APP = 'https://auction-price-checker.onrender.com';
   var h1 = (document.querySelector('h1') || {}).innerText || '';
   var brand = h1.split(/[\s（(▼]/)[0] || '';
-  var name = h1.replace(/\([^)]+\)/g, '').replace(/▼[^▼]*▼/g, '').replace(brand, '').trim();
+  // ブランド名・コード・注意書きを除去してクリーンな商品名を作る
+  var cleanName = h1
+    .replace(/\([^)]+\)/g, '')
+    .replace(/▼[^▼]*▼/g, '')
+    .replace(new RegExp(brand + '\\s*', 'gi'), '')
+    .replace(/\s+/g, ' ')
+    .trim();
   var txt = document.body.innerText;
   var rank = (txt.match(/([A-S])\s*ランク/) || [])[1] || '';
   var desc = (txt.match(/〈商品説明〉[\r\n]+([\s\S]*?)(?=\n♥|\n開始価格)/) || [])[1] || '';
@@ -344,12 +350,16 @@ function _ecoaucBookmarklet() {
   sp = sp.replace(/,/g, '');
   var shape = (txt.match(/形状コード[\r\n]+([^\r\n]+)/) || [])[1] || '';
   shape = shape.trim();
-  var q = [brand, shape].filter(Boolean).join(' ');
-  var pq = [brand, name].filter(Boolean).join(' ').substring(0, 60);
+  // 検索クエリ：ブランド + 商品名の先頭3ワード（形状含む）
+  var keyWords = cleanName.split(/\s+/).filter(function(w) {
+    return w.length > 1;
+  }).slice(0, 3);
+  var q = [brand].concat(keyWords).join(' ');
+  var pq = [brand, cleanName].filter(Boolean).join(' ').substring(0, 60);
   var data = {
     source: 'ecoauc', url: location.href,
     maker: brand, makerNormalized: brand,
-    productName: name, productNameNormalized: name,
+    productName: cleanName, productNameNormalized: cleanName,
     grade: rank, evaluation: rank, damage: desc,
     images: imgs.slice(0, 10), startPrice: sp, shape: shape,
     searchQuery: q, preciseQuery: pq
