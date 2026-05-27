@@ -202,6 +202,15 @@
   .buysell-card .bs-note { font-size: 11px; color: var(--text-dim); margin-top: 5px; line-height: 1.4; }
   .buysell-card.retail { border-color: #0984e3; }
   .buysell-card.sold { border-color: #6c5ce7; }
+  .ref-price-input-box { margin-top:16px; padding:14px 16px; background:var(--surface2); border-radius:12px; border:1px dashed var(--accent); }
+  .ref-price-label { font-size:12px; color:var(--accent-light); margin-bottom:10px; font-weight:600; }
+  .ref-price-row { display:flex; align-items:center; gap:8px; }
+  .ref-price-yen { font-size:18px; font-weight:700; color:var(--text); }
+  .ref-price-input { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:16px; color:var(--text); outline:none; max-width:180px; }
+  .ref-price-input:focus { border-color:var(--accent); }
+  .ref-price-btn { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
+  .ref-price-btn:hover { opacity:0.85; }
+  .ref-price-result { margin-top:12px; }
   .bs-judgment { margin-top: 8px; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
   .bs-judgment.best { background: rgba(0,184,148,0.2); color: #00b894; }
   .bs-judgment.caution { background: rgba(253,203,110,0.2); color: #f9a825; }
@@ -793,6 +802,15 @@ function renderPriceSummary(results, query, preciseQuery, aiInfo) {
     </div>
     <div style="font-size:11px;color:var(--text-dim);margin-top:8px;text-align:center;">
       ※ 小売最安値×40%以下で仕入れられるとBEST。状態・付属品・需要により調整してください。
+    </div>
+    <div class="ref-price-input-box">
+      <div class="ref-price-label">📷 Google Lens・楽天で確認した小売価格を入力 → 仕入れ目安を即時更新</div>
+      <div class="ref-price-row">
+        <span class="ref-price-yen">¥</span>
+        <input id="refPriceInput" type="number" class="ref-price-input" placeholder="例: 120000" min="1000" step="1000">
+        <button class="ref-price-btn" onclick="applyRefPrice()">この価格で更新</button>
+      </div>
+      <div id="refPriceResult" class="ref-price-result"></div>
     </div>`;
   }
 
@@ -925,6 +943,51 @@ function renderImageSearch(data, imageDataUrl) {
 // ============================================================
 // 手動検索リンク
 // ============================================================
+// ============================================================
+// 小売参考価格の手動入力 → 仕入れ目安をリアルタイム更新
+// ============================================================
+function applyRefPrice() {
+  const input = document.getElementById('refPriceInput');
+  const result = document.getElementById('refPriceResult');
+  const refPrice = parseInt(input.value);
+  if (!refPrice || refPrice < 1000) {
+    result.innerHTML = '<span style="color:var(--red);font-size:12px;">¥1,000以上の価格を入力してください</span>';
+    return;
+  }
+  const purchaseTarget = Math.round(refPrice * 0.4);
+  const startPrice = window._currentData && parseInt(window._currentData.startPrice) || 0;
+
+  let judgment = '';
+  let judgmentClass = '';
+  if (startPrice > 0) {
+    if (startPrice <= purchaseTarget) {
+      judgmentClass = 'best';
+      judgment = `✅ BEST仕入れ（スタート¥${startPrice.toLocaleString()} ≤ 目安¥${purchaseTarget.toLocaleString()}）`;
+    } else if (startPrice <= purchaseTarget * 1.5) {
+      judgmentClass = 'caution';
+      judgment = `⚠️ 要検討（スタート¥${startPrice.toLocaleString()} / 目安¥${purchaseTarget.toLocaleString()}）`;
+    } else {
+      judgmentClass = 'over';
+      judgment = `❌ 高値（スタート¥${startPrice.toLocaleString()} > 目安¥${purchaseTarget.toLocaleString()}）`;
+    }
+  }
+
+  result.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+      <div class="buysell-card retail" style="padding:12px;">
+        <div class="bs-label">🏪 入力した小売価格</div>
+        <div class="bs-value">¥${refPrice.toLocaleString()}</div>
+        <div class="bs-note">Google Lens・楽天で確認した価格</div>
+      </div>
+      <div class="buysell-card buy" style="padding:12px;">
+        <div class="bs-label">💴 仕入れ目安（MAX）</div>
+        <div class="bs-value">¥${purchaseTarget.toLocaleString()}</div>
+        <div class="bs-note">小売価格（¥${refPrice.toLocaleString()}）の40%</div>
+        ${judgment ? `<div class="bs-judgment ${judgmentClass}">${judgment}</div>` : ''}
+      </div>
+    </div>`;
+}
+
 function renderSearchLinks(data) {
   const grid = document.getElementById('searchGrid');
   grid.innerHTML = '';
