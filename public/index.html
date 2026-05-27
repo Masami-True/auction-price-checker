@@ -466,18 +466,16 @@ function _aucnetBookmarklet() {
     });
 }
 
-// ブックマークレットリンクのhrefをセット（右クリック→「リンクをブックマークに追加」で登録可能）
+// ブックマークレットリンクのhrefをセット（ドラッグ登録リンクがある場合に使用）
+// ※テキストエリアの値はHTML側で短縮URLとして直接記述済み。上書き不要。
 (function() {
   var eLink = document.getElementById('ecoaucLink');
   var aLink = document.getElementById('aucnetLink');
-  var eCode = document.getElementById('ecoaucCode');
-  var aCode = document.getElementById('aucnetCode');
+  if (!eLink && !aLink) return; // ドラッグリンクが存在しない場合は何もしない
   var eBm = 'javascript:(' + _ecoaucBookmarklet.toString() + ')();';
   var aBm = 'javascript:(' + _aucnetBookmarklet.toString() + ')();';
   if (eLink) eLink.href = eBm;
   if (aLink) aLink.href = aBm;
-  if (eCode) eCode.value = eBm;
-  if (aCode) aCode.value = aBm;
 })();
 
 // コードをクリップボードにコピー
