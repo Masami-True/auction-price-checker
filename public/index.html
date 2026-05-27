@@ -811,13 +811,6 @@ function renderImageSearch(data, imageDataUrl) {
     return new File([u8], filename, { type: mime });
   }
 
-  // ── AI画像解析ボタン（最上部）──
-  const aiBtn = document.createElement('button');
-  aiBtn.className = 'img-action-btn ai-btn';
-  aiBtn.innerHTML = `<div class="btn-icon" style="background:var(--accent);color:#fff;font-size:16px;">✦</div><div class="btn-info"><div class="btn-name">AIで商品を特定して価格を調べる <span class="ai-badge">NEW</span></div><div class="btn-desc">画像からブランド・型番を自動認識 → 市場価格をその場で表示</div></div><div class="arrow">→</div>`;
-  aiBtn.addEventListener('click', () => analyzeImageAndSearch(imageDataUrl, aiBtn));
-  actions.appendChild(aiBtn);
-
   // Google Lens
   const lensBtn = document.createElement('button');
   lensBtn.className = 'img-action-btn';
