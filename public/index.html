@@ -230,21 +230,24 @@
       <p class="bookmarklet-desc">各サイトの商品ページで1クリックするだけで、自動的にこのアプリに商品情報を送信できます。PDFダウンロード不要！</p>
 
       <div class="bookmarklet-steps">
-        <div class="step">① 下のボタンを<strong>右クリック → 「リンクをブックマークに追加」</strong>で保存</div>
-        <div class="step">② エコオク／オークネットの商品ページを開く</div>
-        <div class="step">③ 保存したブックマークをクリック → <strong>そのタブが価格チェッカーに自動移動</strong>して検索スタート 🚀</div>
+        <div class="step">① 下の<strong>「URLをコピー」</strong>ボタンを押す</div>
+        <div class="step">② <strong>Ctrl+Shift+O</strong> でブックマークマネージャーを開く</div>
+        <div class="step">③ 右上の「︙」→「新しいブックマークを追加」→ 名前を入力してURL欄に<strong>Ctrl+V</strong>で貼り付け → 保存</div>
+        <div class="step">④ エコオク／オークネットの商品ページで登録したブックマークをクリック → <strong>そのタブが価格チェッカーに自動移動</strong> 🚀</div>
       </div>
 
       <div class="bm-code-block">
         <div class="bm-code-label">🛍️ エコオク チェッカー</div>
-        <div class="bm-reg-hint">👆 下のボタンを<strong>右クリック →「リンクをブックマークに追加」</strong>で登録できます</div>
-        <a class="bm-drag-link" id="ecoaucLink" href="#">🛍️ エコオク チェッカー（右クリックして保存）</a>
+        <div class="bm-reg-hint">⬇️ このURLをコピーして、ブックマークのURL欄に貼り付けてください（<strong>たった100文字</strong>）</div>
+        <textarea class="bm-code-textarea" id="ecoaucCode" readonly spellcheck="false">javascript:fetch('https://auction-price-checker.onrender.com/bm/eco.js').then(r=>r.text()).then(eval)</textarea>
+        <button class="bm-copy-btn" onclick="copyCode('ecoaucCode', this)">URLをコピー</button>
       </div>
 
       <div class="bm-code-block">
         <div class="bm-code-label">🏷️ オークネット チェッカー</div>
-        <div class="bm-reg-hint">👆 下のボタンを<strong>右クリック →「リンクをブックマークに追加」</strong>で登録できます</div>
-        <a class="bm-drag-link" id="aucnetLink" href="#">🏷️ オークネット チェッカー（右クリックして保存）</a>
+        <div class="bm-reg-hint">⬇️ このURLをコピーして、ブックマークのURL欄に貼り付けてください（<strong>たった100文字</strong>）</div>
+        <textarea class="bm-code-textarea" id="aucnetCode" readonly spellcheck="false">javascript:fetch('https://auction-price-checker.onrender.com/bm/aucnet.js').then(r=>r.text()).then(eval)</textarea>
+        <button class="bm-copy-btn" onclick="copyCode('aucnetCode', this)">URLをコピー</button>
       </div>
 
       <div class="bookmarklet-note">💡 ブックマークバーが見えない場合：Chrome は Ctrl+Shift+B（Mac: ⌘+Shift+B）で表示できます</div>
