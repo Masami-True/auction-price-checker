@@ -171,15 +171,13 @@
   .bookmarklet-steps .step { font-size: 13px; color: var(--text-dim); padding: 3px 0; }
   .bookmarklet-steps .step strong { color: var(--accent-light); }
   .bookmarklet-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
-  .bookmarklet-btn {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: var(--surface2); border: 2px dashed var(--accent); border-radius: 12px;
-    padding: 14px 22px; text-decoration: none; color: var(--text); font-size: 14px; font-weight: 600;
-    cursor: grab; transition: all 0.2s; min-width: 170px; text-align: center; line-height: 1.5;
-  }
-  .bookmarklet-btn:hover { background: rgba(108,92,231,0.12); border-color: var(--accent-light); transform: translateY(-1px); }
-  .bookmarklet-btn small { color: var(--accent-light); font-size: 11px; font-weight: 400; margin-top: 4px; }
   .bookmarklet-note { font-size: 11px; color: var(--text-dim); margin-top: 12px; padding: 8px 12px; background: var(--surface2); border-radius: 8px; }
+  .bm-code-block { margin-bottom: 16px; }
+  .bm-code-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+  .bm-code-textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--accent-light); font-size: 11px; font-family: monospace; resize: none; height: 58px; margin-bottom: 6px; display: block; line-height: 1.4; }
+  .bm-copy-btn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s; font-family: inherit; }
+  .bm-copy-btn:hover { background: var(--accent-light); color: var(--bg); }
+  .bm-copy-btn.copied { background: var(--green); }
 
   /* AI識別バッジ */
   .ai-identified { font-size: 12px; background: rgba(108,92,231,0.12); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 14px; margin-bottom: 14px; color: var(--text-dim); }
@@ -222,19 +220,25 @@
     <div class="bookmarklet-content" id="bookmarkletContent">
       <p class="bookmarklet-desc">各サイトの商品ページで1クリックするだけで、自動的にこのアプリに商品情報を送信できます。PDFダウンロード不要！</p>
       <div class="bookmarklet-steps">
-        <div class="step">① <strong>下のボタン</strong>をブラウザのブックマークバーに<strong>ドラッグ＆ドロップ</strong>して登録</div>
-        <div class="step">② エコオク／オークネットの商品ページを開く</div>
-        <div class="step">③ 登録したブックマークをクリック → このアプリが自動で開いて価格検索スタート 🚀</div>
+        <div class="step">① <strong>「コードをコピー」</strong>ボタンを押す</div>
+        <div class="step">② ブラウザのブックマークバーを右クリック → <strong>「ページを追加」</strong>（または「ブックマークを追加」）を選ぶ</div>
+        <div class="step">③ 名前を入力し、<strong>URL欄にコピーしたコードをそのまま貼り付け</strong>て保存</div>
+        <div class="step">④ エコオク／オークネットの商品ページで登録したブックマークをクリック → 価格検索スタート 🚀</div>
       </div>
-      <div class="bookmarklet-buttons">
-        <a class="bookmarklet-btn" id="ecoaucBookmarklet" href="#" onclick="alert('このボタンをブラウザのブックマークバーにドラッグして登録してください'); return false;">
-          🛍️ エコオク チェッカー<br><small>← ドラッグしてブックマーク登録</small>
-        </a>
-        <a class="bookmarklet-btn" id="aucnetBookmarklet" href="#" onclick="alert('このボタンをブラウザのブックマークバーにドラッグして登録してください'); return false;">
-          🏷️ オークネット チェッカー<br><small>← ドラッグしてブックマーク登録</small>
-        </a>
+
+      <div class="bm-code-block">
+        <div class="bm-code-label">🛍️ エコオク チェッカー</div>
+        <textarea class="bm-code-textarea" id="ecoaucCode" readonly spellcheck="false"></textarea>
+        <button class="bm-copy-btn" onclick="copyCode('ecoaucCode', this)">コードをコピー</button>
       </div>
-      <div class="bookmarklet-note">💡 ブックマークバーが見えない場合：Chrome は Ctrl+Shift+B / Mac は ⌘+Shift+B で表示できます</div>
+
+      <div class="bm-code-block">
+        <div class="bm-code-label">🏷️ オークネット チェッカー</div>
+        <textarea class="bm-code-textarea" id="aucnetCode" readonly spellcheck="false"></textarea>
+        <button class="bm-copy-btn" onclick="copyCode('aucnetCode', this)">コードをコピー</button>
+      </div>
+
+      <div class="bookmarklet-note">💡 ブックマークバーが見えない場合：Chrome は Ctrl+Shift+B（Mac: ⌘+Shift+B）で表示できます</div>
     </div>
   </div>
 
@@ -336,106 +340,79 @@ function getImageFetchUrl(url) {
 }
 
 // ============================================================
-// ブックマークレット本体（.toString()でhrefにセット）
+// ブックマークレット本体
 // ============================================================
 function _ecoaucBookmarklet() {
   var APP = 'https://auction-price-checker.onrender.com';
-
-  // トースト表示
-  var toast = document.createElement('div');
-  toast.style.cssText = 'position:fixed;top:16px;right:16px;background:#6c5ce7;color:#fff;padding:12px 20px;border-radius:10px;z-index:99999;font-size:14px;font-family:sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.3);transition:opacity 0.3s;';
-  toast.textContent = '⏳ 価格チェッカーに送信中...';
-  document.body.appendChild(toast);
-
-  // ★ポップアップブロック対策：先にウィンドウを開いてからデータを送る
-  var win = window.open(APP, '_blank');
-  if (!win) {
-    toast.style.background = '#e17055';
-    toast.textContent = '❌ ポップアップがブロックされました。ブラウザのアドレスバー横のアイコンから許可してください。';
-    setTimeout(function() { toast.remove(); }, 6000);
+  var t = document.createElement('div');
+  t.style.cssText = 'position:fixed;top:16px;right:16px;background:#6c5ce7;color:#fff;padding:12px 20px;border-radius:10px;z-index:99999;font-size:14px;font-family:sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.3);';
+  t.textContent = '⏳ 価格チェッカーに送信中...';
+  document.body.appendChild(t);
+  var w = window.open(APP, '_blank');
+  if (!w) {
+    t.style.background = '#e17055';
+    t.textContent = '❌ ポップアップをブロックされました。アドレスバー横のアイコンから許可してください。';
+    setTimeout(function() { t.remove(); }, 6000);
     return;
   }
-
   var h1 = (document.querySelector('h1') || {}).innerText || '';
-  var brand = h1.split(/[\s（(▼]/)[0] || '';
-  var cleanName = h1
-    .replace(/\([^)]+\)/g, '')
-    .replace(/▼[^▼]*▼/g, '')
-    .replace(new RegExp(brand + '\\s*', 'gi'), '')
-    .replace(/\s+/g, ' ').trim();
+  var brand = h1.split(/[\s　（(▼]/)[0] || '';
+  var clean = h1.replace(/\([^)]+\)/g, '').replace(/▼[^▼]*▼/g, '')
+    .replace(new RegExp(brand + '\\s*', 'gi'), '').replace(/\s+/g, ' ').trim();
   var txt = document.body.innerText;
   var rank = (txt.match(/([A-S])\s*ランク/) || [])[1] || '';
   var desc = (txt.match(/〈商品説明〉[\r\n]+([\s\S]*?)(?=\n♥|\n開始価格)/) || [])[1] || '';
   desc = desc.trim();
   var imgs = [];
   document.querySelectorAll('a[href*="assets.ecoauc.com/images"]').forEach(function(a) {
-    var slide = a.closest ? a.closest('.swiper-slide') : null;
-    if (slide && slide.classList.contains('swiper-slide-duplicate')) return;
+    var s = a.closest ? a.closest('.swiper-slide') : null;
+    if (s && s.classList.contains('swiper-slide-duplicate')) return;
     if (imgs.indexOf(a.href) < 0) imgs.push(a.href);
   });
   var sp = (txt.match(/開始価格[\s\S]*?¥\s*([\d,]+)/) || [])[1] || '';
   sp = sp.replace(/,/g, '');
   var shape = (txt.match(/形状コード[\r\n]+([^\r\n]+)/) || [])[1] || '';
   shape = shape.trim();
-  var keyWords = cleanName.split(/\s+/).filter(function(w) { return w.length > 1; }).slice(0, 3);
-  var q = [brand].concat(keyWords).join(' ');
-  var pq = [brand, cleanName].filter(Boolean).join(' ').substring(0, 60);
-  var data = {
-    source: 'ecoauc', url: location.href,
-    maker: brand, makerNormalized: brand,
-    productName: cleanName, productNameNormalized: cleanName,
-    grade: rank, evaluation: rank, damage: desc,
-    images: imgs.slice(0, 10), startPrice: sp, shape: shape,
-    searchQuery: q, preciseQuery: pq
-  };
-
-  fetch(APP + '/api/from-page', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
-  }).then(function(r) { return r.json(); })
+  var kw = clean.split(/\s+/).filter(function(w) { return w.length > 1; }).slice(0, 3);
+  var q = [brand].concat(kw).join(' ');
+  var pq = [brand, clean].filter(Boolean).join(' ').substring(0, 60);
+  var data = { source: 'ecoauc', url: location.href, maker: brand, makerNormalized: brand,
+    productName: clean, productNameNormalized: clean, grade: rank, evaluation: rank,
+    damage: desc, images: imgs.slice(0, 10), startPrice: sp, shape: shape,
+    searchQuery: q, preciseQuery: pq };
+  fetch(APP + '/api/from-page', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+    .then(function(r) { return r.json(); })
     .then(function(j) {
-      if (j.token) {
-        win.location.href = APP + '?token=' + j.token;
-        toast.style.background = '#00b894';
-        toast.textContent = '✅ 送信完了！新しいタブで開きます';
-      } else {
-        win.close();
-        toast.style.background = '#e17055';
-        toast.textContent = '❌ エラー: データ送信失敗';
-      }
-      setTimeout(function() { toast.remove(); }, 3000);
+      if (j.token) { w.location.href = APP + '?token=' + j.token; t.style.background = '#00b894'; t.textContent = '✅ 送信完了！新しいタブで開きます'; }
+      else { w.close(); t.style.background = '#e17055'; t.textContent = '❌ エラー: データ送信失敗'; }
+      setTimeout(function() { t.remove(); }, 3000);
     }).catch(function(e) {
-      win.close();
-      toast.style.background = '#e17055';
-      toast.textContent = '❌ エラー: ' + e.message + '（サーバー起動中なら再度クリック）';
-      setTimeout(function() { toast.remove(); }, 6000);
+      w.close(); t.style.background = '#e17055';
+      t.textContent = '❌ エラー: ' + e.message + '（サーバー起動中なら再度クリック）';
+      setTimeout(function() { t.remove(); }, 6000);
     });
 }
 
 function _aucnetBookmarklet() {
   var APP = 'https://auction-price-checker.onrender.com';
-
-  var toast = document.createElement('div');
-  toast.style.cssText = 'position:fixed;top:16px;right:16px;background:#6c5ce7;color:#fff;padding:12px 20px;border-radius:10px;z-index:99999;font-size:14px;font-family:sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.3);';
-  toast.textContent = '⏳ 価格チェッカーに送信中...';
-  document.body.appendChild(toast);
-
-  var win = window.open(APP, '_blank');
-  if (!win) {
-    toast.style.background = '#e17055';
-    toast.textContent = '❌ ポップアップがブロックされました。アドレスバー横のアイコンから許可してください。';
-    setTimeout(function() { toast.remove(); }, 6000);
+  var t = document.createElement('div');
+  t.style.cssText = 'position:fixed;top:16px;right:16px;background:#6c5ce7;color:#fff;padding:12px 20px;border-radius:10px;z-index:99999;font-size:14px;font-family:sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.3);';
+  t.textContent = '⏳ 価格チェッカーに送信中...';
+  document.body.appendChild(t);
+  var w = window.open(APP, '_blank');
+  if (!w) {
+    t.style.background = '#e17055';
+    t.textContent = '❌ ポップアップをブロックされました。アドレスバー横のアイコンから許可してください。';
+    setTimeout(function() { t.remove(); }, 6000);
     return;
   }
-
   var txt = document.body.innerText;
   var h1el = document.querySelector('h1,.itemName,[class*="item-name"],[class*="product-name"]');
-  var h1text = h1el ? h1el.innerText.trim() :
-    document.title.replace(/【[^】]*】/g, '').replace(/\s*[-|]\s*.*$/, '').trim();
+  var h1text = h1el ? h1el.innerText.trim() : document.title.replace(/【[^】]*】/g, '').replace(/\s*[-|]\s*.*$/, '').trim();
   var brandEl = document.querySelector('[class*="brand"],[class*="maker"],[class*="Brand"],[class*="Maker"]');
   var brand = brandEl ? brandEl.innerText.trim() : h1text.split(/[\s　]/)[0] || '';
   var rankEl = document.querySelector('[class*="rank"],[class*="grade"],[class*="Rank"],[class*="Grade"]');
-  var rank = rankEl ? rankEl.innerText.replace(/\s+/g, '').trim() :
-    (txt.match(/(?:ランク|グレード)[：:]\s*([A-S0-9]+)/) || [])[1] || '';
+  var rank = rankEl ? rankEl.innerText.replace(/\s+/g, '').trim() : (txt.match(/(?:ランク|グレード)[：:]\s*([A-S0-9]+)/) || [])[1] || '';
   var descEl = document.querySelector('[class*="comment"],[class*="damage"],[class*="detail-desc"]');
   var desc = descEl ? descEl.innerText.trim() : '';
   var imgs = [];
@@ -449,44 +426,50 @@ function _aucnetBookmarklet() {
   var sp = spM ? spM[1].replace(/,/g, '') : '';
   var q = [brand, h1text].filter(Boolean).join(' ').substring(0, 50);
   var pq = model ? [brand, model].join(' ') : [brand, h1text].filter(Boolean).join(' ').substring(0, 50);
-  var data = {
-    source: 'aucnet', url: location.href,
-    maker: brand, makerNormalized: brand,
-    productName: h1text, productNameNormalized: h1text,
-    grade: rank, evaluation: rank, damage: desc,
-    images: imgs.slice(0, 10), startPrice: sp, modelNumber: model,
-    searchQuery: q, preciseQuery: pq
-  };
-
-  fetch(APP + '/api/from-page', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
-  }).then(function(r) { return r.json(); })
+  var data = { source: 'aucnet', url: location.href, maker: brand, makerNormalized: brand,
+    productName: h1text, productNameNormalized: h1text, grade: rank, evaluation: rank,
+    damage: desc, images: imgs.slice(0, 10), startPrice: sp, modelNumber: model,
+    searchQuery: q, preciseQuery: pq };
+  fetch(APP + '/api/from-page', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+    .then(function(r) { return r.json(); })
     .then(function(j) {
-      if (j.token) {
-        win.location.href = APP + '?token=' + j.token;
-        toast.style.background = '#00b894';
-        toast.textContent = '✅ 送信完了！新しいタブで開きます';
-      } else {
-        win.close();
-        toast.style.background = '#e17055';
-        toast.textContent = '❌ エラー: データ送信失敗';
-      }
-      setTimeout(function() { toast.remove(); }, 3000);
+      if (j.token) { w.location.href = APP + '?token=' + j.token; t.style.background = '#00b894'; t.textContent = '✅ 送信完了！新しいタブで開きます'; }
+      else { w.close(); t.style.background = '#e17055'; t.textContent = '❌ エラー: データ送信失敗'; }
+      setTimeout(function() { t.remove(); }, 3000);
     }).catch(function(e) {
-      win.close();
-      toast.style.background = '#e17055';
-      toast.textContent = '❌ エラー: ' + e.message + '（サーバー起動中なら再度クリック）';
-      setTimeout(function() { toast.remove(); }, 6000);
+      w.close(); t.style.background = '#e17055';
+      t.textContent = '❌ エラー: ' + e.message + '（サーバー起動中なら再度クリック）';
+      setTimeout(function() { t.remove(); }, 6000);
     });
 }
 
-// ブックマークレットのhrefをセット
+// テキストエリアにブックマークレットコードをセット
 (function() {
-  var eEl = document.getElementById('ecoaucBookmarklet');
-  var aEl = document.getElementById('aucnetBookmarklet');
-  if (eEl) eEl.href = 'javascript:(' + _ecoaucBookmarklet.toString() + ')()';
-  if (aEl) aEl.href = 'javascript:(' + _aucnetBookmarklet.toString() + ')()';
+  var eEl = document.getElementById('ecoaucCode');
+  var aEl = document.getElementById('aucnetCode');
+  if (eEl) eEl.value = 'javascript:(' + _ecoaucBookmarklet.toString() + ')();';
+  if (aEl) aEl.value = 'javascript:(' + _aucnetBookmarklet.toString() + ')();';
 })();
+
+// コードをクリップボードにコピー
+function copyCode(id, btn) {
+  var ta = document.getElementById(id);
+  ta.select();
+  ta.setSelectionRange(0, 99999);
+  var orig = btn.textContent;
+  function onDone() {
+    btn.textContent = '✅ コピーしました！';
+    btn.classList.add('copied');
+    setTimeout(function() { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(ta.value).then(onDone).catch(function() {
+      document.execCommand('copy'); onDone();
+    });
+  } else {
+    document.execCommand('copy'); onDone();
+  }
+}
 
 // ============================================================
 // ブックマークレット経由データ処理（?token=xxx でアクセスされた時）
