@@ -317,7 +317,32 @@ async function searchAllSites(query, preciseQuery) {
     return { site: names[i], items: [], error: r.reason?.message || '取得失敗' };
   });
 
-  const allItems = sites.flatMap(s => s.items).filter(i => i.price > 0);
+  // ============================================================
+  // ブランド名フィルタ：クエリ先頭のブランド名を含まないアイテムを除外
+  // メルカリ等のOR検索で無関係商品が混入するのを防ぐ
+  // ============================================================
+  const BRAND_EN_MAP = {
+    'エルメス': 'hermes', 'ルイヴィトン': 'vuitton', 'ヴィトン': 'vuitton',
+    'シャネル': 'chanel', 'グッチ': 'gucci', 'プラダ': 'prada',
+    'コーチ': 'coach', 'セリーヌ': 'celine', 'ディオール': 'dior',
+    'フェンディ': 'fendi', 'バレンシアガ': 'balenciaga', 'ロエベ': 'loewe',
+    'ゴヤール': 'goyard', 'バーバリー': 'burberry', 'ヴァレンティノ': 'valentino',
+    'ボッテガ': 'bottega', 'サンローラン': 'laurent', 'ジバンシー': 'givenchy',
+    'カルティエ': 'cartier', 'ブルガリ': 'bvlgari', 'ミュウミュウ': 'miu',
+  };
+
+  function isRelevantItem(item, brandWord) {
+    if (!brandWord || brandWord.length < 2) return true;
+    const name = (item.name || '').toLowerCase();
+    const bl = brandWord.toLowerCase();
+    const enAlt = BRAND_EN_MAP[brandWord] || null;
+    return name.includes(bl) || (enAlt && name.includes(enAlt));
+  }
+
+  const brandWord = query.split(/\s+/)[0] || '';
+  const allItems = sites.flatMap(s => s.items)
+    .filter(i => i.price > 0)
+    .filter(i => isRelevantItem(i, brandWord));
 
   // ¥1,000未満は1円スタートや送料のみ等の除外対象
   const PRICE_FLOOR = 1000;
