@@ -919,6 +919,16 @@ function renderImageSearch(data, imageDataUrl) {
   });
   actions.appendChild(lensBtn);
 
+  // キーワード画像検索（精密クエリ使用）
+  const imgQuery = data.preciseQuery || data.searchQuery || (data.makerNormalized || data.maker || '');
+  if (imgQuery) {
+    const kwBtn = document.createElement('a');
+    kwBtn.className = 'img-action-btn';
+    kwBtn.href = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(imgQuery)}`;
+    kwBtn.target = '_blank';
+    kwBtn.innerHTML = `<div class="btn-icon google-bg">🖼</div><div class="btn-info"><div class="btn-name">キーワード画像検索</div><div class="btn-desc">「${imgQuery}」の画像一覧で見比べ</div></div><div class="arrow">→</div>`;
+    actions.appendChild(kwBtn);
+  }
 
 }
 
