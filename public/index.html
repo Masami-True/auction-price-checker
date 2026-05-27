@@ -927,20 +927,6 @@ function renderImageSearch(data, imageDataUrl) {
   kwBtn.innerHTML = `<div class="btn-icon google-bg">🖼</div><div class="btn-info"><div class="btn-name">キーワード画像検索</div><div class="btn-desc">「${imgQuery}」の画像一覧で見比べ</div></div><div class="arrow">→</div>`;
   actions.appendChild(kwBtn);
 
-  // Copy
-  const copyBtn = document.createElement('button');
-  copyBtn.className = 'img-action-btn';
-  copyBtn.innerHTML = `<div class="btn-icon" style="background:var(--accent);color:#fff;">📋</div><div class="btn-info"><div class="btn-name" id="copyBtnText">画像をコピー</div><div class="btn-desc">メルカリ等の検索画面に貼り付け用</div></div>`;
-  copyBtn.addEventListener('click', async () => {
-    try {
-      const res = await fetch(getImageFetchUrl(imageDataUrl)); const blob = await res.blob();
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': new Blob([blob], { type: 'image/png' }) })]);
-      const txt = document.getElementById('copyBtnText');
-      txt.textContent = 'コピーしました!'; txt.classList.add('copy-success');
-      setTimeout(() => { txt.textContent = '画像をコピー'; txt.classList.remove('copy-success'); }, 2000);
-    } catch(e) { const a = document.createElement('a'); a.href = imageDataUrl; a.download = 'product-image.png'; a.click(); }
-  });
-  actions.appendChild(copyBtn);
 }
 
 // ============================================================
