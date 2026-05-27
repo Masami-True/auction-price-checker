@@ -193,13 +193,19 @@
   .ai-identified strong { color: var(--accent-light); }
 
   /* 仕入れ・販売目安 */
-  .buysell-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .buysell-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
   .buysell-card { background: var(--surface2); border-radius: 12px; padding: 16px; text-align: center; position: relative; }
   .buysell-card .bs-label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
   .buysell-card .bs-value { font-size: 24px; font-weight: 800; }
   .buysell-card.buy .bs-value { color: var(--blue); }
   .buysell-card.sell .bs-value { color: var(--green); }
   .buysell-card .bs-note { font-size: 11px; color: var(--text-dim); margin-top: 5px; line-height: 1.4; }
+  .buysell-card.retail { border-color: #0984e3; }
+  .buysell-card.sold { border-color: #6c5ce7; }
+  .bs-judgment { margin-top: 8px; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+  .bs-judgment.best { background: rgba(0,184,148,0.2); color: #00b894; }
+  .bs-judgment.caution { background: rgba(253,203,110,0.2); color: #f9a825; }
+  .bs-judgment.over { background: rgba(225,112,85,0.2); color: #e17055; }
 
   @media (max-width: 600px) {
     .product-top { flex-direction: column; align-items: center; }
@@ -706,38 +712,87 @@ function renderPriceSummary(results, query, preciseQuery, aiInfo) {
     } else if (prices.length === 0) {
       html += `<div class="site-empty">データなし</div>`;
     } else {
-      const min = Math.min(...prices);
-      const max = Math.max(...prices);
-      html += `<div class="site-count">${prices.length}件</div>
-        <div class="site-range"><span class="low">¥${min.toLocaleString()}</span> 〜 <span class="high">¥${max.toLocaleString()}</span></div>`;
+      const filteredPrices = prices.filter(p => p >= 1000);
+      const fMin = filteredPrices.length > 0 ? Math.min(...filteredPrices) : Math.min(...prices);
+      const fMax = filteredPrices.length > 0 ? Math.max(...filteredPrices) : Math.max(...prices);
+      html += `<div class="site-count">${filteredPrices.length}件</div>
+        <div class="site-range"><span class="low">¥${fMin.toLocaleString()}</span> 〜 <span class="high">¥${fMax.toLocaleString()}</span></div>`;
     }
     html += '</div>';
   });
   html += '</div>';
 
-  // 仕入れ・販売目安
+  // 仕入れ判定セクション
   if (results.summary) {
     const s = results.summary;
-    // 仕入れ目安：中央値の50%（中古品の一般的な買取率）
-    const buyTarget = Math.round(s.medianPrice * 0.5);
-    // 販売推奨：最安値より少し安い or 中央値の85%（相場の中に入れる）
-    const sellTarget = Math.round(Math.min(s.minPrice * 0.95, s.medianPrice * 0.85));
-    const margin = sellTarget - buyTarget;
+    const startPrice = window._currentData && parseInt(window._currentData.startPrice) || 0;
+
+    // 小売最安値ブロック
+    const retailBlock = s.retailMin
+      ? `<div class="buysell-card retail">
+          <div class="bs-label">🏪 小売最安値</div>
+          <div class="bs-value">¥${s.retailMin.toLocaleString()}</div>
+          <div class="bs-note">楽天・Yahooショッピング（新品・業者）</div>
+        </div>`
+      : '';
+
+    // 中古落札相場ブロック
+    const soldBlock = s.soldMedian
+      ? `<div class="buysell-card sold">
+          <div class="bs-label">🔨 中古落札相場</div>
+          <div class="bs-value">¥${s.soldMedian.toLocaleString()}</div>
+          <div class="bs-note">落札済${s.soldItemCount}件の中央値（¥${(s.soldMin||0).toLocaleString()}〜¥${(s.soldMax||0).toLocaleString()}）</div>
+        </div>`
+      : '';
+
+    // 仕入れ目安ブロック
+    let purchaseBlock = '';
+    if (s.purchaseTarget) {
+      let judgment = '';
+      if (startPrice > 0) {
+        if (startPrice <= s.purchaseTarget) {
+          judgment = `<div class="bs-judgment best">✅ BEST仕入れ（スタート¥${startPrice.toLocaleString()} ≤ 目安¥${s.purchaseTarget.toLocaleString()}）</div>`;
+        } else if (startPrice <= s.purchaseTarget * 1.5) {
+          judgment = `<div class="bs-judgment caution">⚠️ 要検討（スタート¥${startPrice.toLocaleString()} / 目安¥${s.purchaseTarget.toLocaleString()}）</div>`;
+        } else {
+          judgment = `<div class="bs-judgment over">❌ 高値（スタート¥${startPrice.toLocaleString()} > 目安¥${s.purchaseTarget.toLocaleString()}）</div>`;
+        }
+      }
+      purchaseBlock = `<div class="buysell-card buy">
+        <div class="bs-label">💴 仕入れ目安（MAX）</div>
+        <div class="bs-value">¥${s.purchaseTarget.toLocaleString()}</div>
+        <div class="bs-note">小売最安値（¥${s.retailMin.toLocaleString()}）の40%</div>
+        ${judgment}
+      </div>`;
+    } else if (s.soldMedian) {
+      // 小売データがない場合は落札相場の40%を目安に
+      const fallbackTarget = Math.round(s.soldMedian * 0.5);
+      let judgment = '';
+      if (startPrice > 0) {
+        if (startPrice <= fallbackTarget) {
+          judgment = `<div class="bs-judgment best">✅ BEST仕入れ（スタート¥${startPrice.toLocaleString()} ≤ 目安¥${fallbackTarget.toLocaleString()}）</div>`;
+        } else if (startPrice <= fallbackTarget * 1.5) {
+          judgment = `<div class="bs-judgment caution">⚠️ 要検討（スタート¥${startPrice.toLocaleString()} / 目安¥${fallbackTarget.toLocaleString()}）</div>`;
+        } else {
+          judgment = `<div class="bs-judgment over">❌ 高値（スタート¥${startPrice.toLocaleString()} > 目安¥${fallbackTarget.toLocaleString()}）</div>`;
+        }
+      }
+      purchaseBlock = `<div class="buysell-card buy">
+        <div class="bs-label">💴 仕入れ目安（参考）</div>
+        <div class="bs-value">¥${fallbackTarget.toLocaleString()}</div>
+        <div class="bs-note">落札相場中央値（¥${s.soldMedian.toLocaleString()}）の50%※小売データなし</div>
+        ${judgment}
+      </div>`;
+    }
+
     html += `
     <div class="buysell-row">
-      <div class="buysell-card buy">
-        <div class="bs-label">💴 仕入れ目安</div>
-        <div class="bs-value">¥${buyTarget.toLocaleString()}</div>
-        <div class="bs-note">中央値（¥${s.medianPrice.toLocaleString()}）の約50%</div>
-      </div>
-      <div class="buysell-card sell">
-        <div class="bs-label">🏷️ 販売推奨価格</div>
-        <div class="bs-value">¥${sellTarget.toLocaleString()}</div>
-        <div class="bs-note">想定利益 ¥${margin.toLocaleString()}（${Math.round(margin/sellTarget*100)}%）</div>
-      </div>
+      ${retailBlock}
+      ${soldBlock}
+      ${purchaseBlock}
     </div>
     <div style="font-size:11px;color:var(--text-dim);margin-top:8px;text-align:center;">
-      ※ 目安は市場中央値ベースの参考値です。状態・付属品・需要により調整してください。
+      ※ 小売最安値×40%以下で仕入れられるとBEST。状態・付属品・需要により調整してください。
     </div>`;
   }
 
@@ -749,6 +804,7 @@ function renderPriceSummary(results, query, preciseQuery, aiInfo) {
 // 商品カード描画
 // ============================================================
 function renderProductCard(data, imageDataUrl) {
+  window._currentData = data;
   document.getElementById('brandName').textContent = data.makerNormalized || data.maker || '-';
   document.getElementById('productName').textContent = data.productNameNormalized || data.productName || '商品名不明';
 

@@ -41,10 +41,12 @@ async function scrapeMercari(query) {
         const name = ariaLabel.replace(/の画像\s*[\d,¥¥]+円?$/, '').trim() || query;
         const link = $(el).find('a').first().attr('href');
         if (price > 0) {
+          const priceType = status === '販売中' ? 'market_active' : 'sold';
           results.items.push({
             name,
             price,
             status,
+            priceType,
             url: link ? (link.startsWith('http') ? link : `https://jp.mercari.com${link}`) : baseUrl,
           });
         }
@@ -81,7 +83,7 @@ async function scrapeYahooAuctions(query) {
         const name = $(el).find('.Product__title a').first().text().trim();
         const link = $(el).find('.Product__title a').first().attr('href');
         if (price > 0) {
-          results.items.push({ name: name || query, price, status: '出品中', url: link || activeUrl });
+          results.items.push({ name: name || query, price, status: '出品中', priceType: 'auction_active', url: link || activeUrl });
         }
       });
     }
@@ -94,7 +96,7 @@ async function scrapeYahooAuctions(query) {
         const name = $(el).find('.Product__title a').first().text().trim();
         const link = $(el).find('.Product__title a').first().attr('href');
         if (price > 0) {
-          results.items.push({ name: name || query, price, status: '落札済', url: link || closedUrl });
+          results.items.push({ name: name || query, price, status: '落札済', priceType: 'sold', url: link || closedUrl });
         }
       });
     }
@@ -125,6 +127,7 @@ async function scrapeRakuten(query) {
               name: Item.itemName.substring(0, 100),
               price: Item.itemPrice,
               status: '販売中',
+              priceType: 'retail',
               url: Item.itemUrl,
             });
           }
@@ -142,7 +145,7 @@ async function scrapeRakuten(query) {
         const name = linkEl.attr('title') || linkEl.find('img').attr('alt') || query;
         const link = linkEl.attr('href');
         if (price > 0) {
-          results.items.push({ name: name.substring(0, 100), price, status: '販売中', url: link || url });
+          results.items.push({ name: name.substring(0, 100), price, status: '販売中', priceType: 'retail', url: link || url });
         }
       });
     }
@@ -181,6 +184,7 @@ async function scrapeAucfree(query) {
             name: name || q,
             price,
             status: '落札済',
+            priceType: 'sold',
             url: href ? (href.startsWith('http') ? href : `https://aucfree.com${href}`) : url,
           });
         }
@@ -257,7 +261,7 @@ async function scrapeYahooShopping(query) {
         return alt.length > 5 && !alt.includes('Yahoo');
       }).first().attr('alt') || query;
 
-      results.items.push({ name: name.substring(0, 100), price, status: '販売中', url: itemUrl });
+      results.items.push({ name: name.substring(0, 100), price, status: '販売中', priceType: 'retail', url: itemUrl });
     });
   } catch (e) {
     results.error = e.message;
@@ -314,27 +318,67 @@ async function searchAllSites(query, preciseQuery) {
   });
 
   const allItems = sites.flatMap(s => s.items).filter(i => i.price > 0);
-  const prices = allItems.map(i => i.price);
+
+  // ¥1,000未満は1円スタートや送料のみ等の除外対象
+  const PRICE_FLOOR = 1000;
+
+  // 小売価格（楽天・Yahooショッピング）
+  const retailItems = allItems.filter(i => i.priceType === 'retail' && i.price >= PRICE_FLOOR);
+  // 落札済・成約済価格（中古相場）
+  const soldItems = allItems.filter(i => i.priceType === 'sold' && i.price >= PRICE_FLOOR);
+  // 出品中・販売中（参考）
+  const activeItems = allItems.filter(i => (i.priceType === 'auction_active' || i.priceType === 'market_active') && i.price >= PRICE_FLOOR);
 
   let summary = null;
-  if (prices.length > 0) {
-    const sorted = [...prices].sort((a, b) => a - b);
-    const minPrice = sorted[0];
-    const maxPrice = sorted[sorted.length - 1];
-    const avgPrice = Math.round(sorted.reduce((a, b) => a + b, 0) / sorted.length);
-    const medianPrice = sorted[Math.floor(sorted.length / 2)];
+  const validItems = [...soldItems, ...activeItems]; // 中古・オークション系のみ
+  const validPrices = validItems.map(i => i.price);
 
-    const minItem = allItems.find(i => i.price === minPrice);
-    const maxItem = allItems.find(i => i.price === maxPrice);
+  if (validPrices.length > 0 || retailItems.length > 0) {
+    const sortedValid = [...validPrices].sort((a, b) => a - b);
+    const sortedRetail = retailItems.map(i => i.price).sort((a, b) => a - b);
+    const sortedSold = soldItems.map(i => i.price).sort((a, b) => a - b);
+
+    // 小売最安値（楽天・Yahooショッピング）
+    const retailMin = sortedRetail.length > 0 ? sortedRetail[0] : null;
+
+    // 中古落札相場（SOLD/落札済のみ）
+    const soldMedian = sortedSold.length > 0 ? sortedSold[Math.floor(sortedSold.length / 2)] : null;
+    const soldAvg = sortedSold.length > 0 ? Math.round(sortedSold.reduce((a,b) => a+b, 0) / sortedSold.length) : null;
+    const soldMin = sortedSold.length > 0 ? sortedSold[0] : null;
+    const soldMax = sortedSold.length > 0 ? sortedSold[sortedSold.length - 1] : null;
+
+    // 全体（参考用）
+    const allValidSorted = [...sortedValid].sort((a,b)=>a-b);
+    const minPrice = allValidSorted.length > 0 ? allValidSorted[0] : (sortedRetail[0] || 0);
+    const maxPrice = allValidSorted.length > 0 ? allValidSorted[allValidSorted.length-1] : (sortedRetail[sortedRetail.length-1] || 0);
+    const avgPrice = allValidSorted.length > 0 ? Math.round(allValidSorted.reduce((a,b)=>a+b,0)/allValidSorted.length) : 0;
+    const medianPrice = allValidSorted.length > 0 ? allValidSorted[Math.floor(allValidSorted.length/2)] : 0;
+
+    const minItem = validItems.find(i => i.price === minPrice) || retailItems.find(i => i.price === minPrice);
+    const maxItem = validItems.find(i => i.price === maxPrice) || retailItems.find(i => i.price === maxPrice);
+
+    // 仕入れ目安 = 小売最安値 × 40%
+    const purchaseTarget = retailMin ? Math.round(retailMin * 0.4) : null;
 
     summary = {
-      totalItems: allItems.length,
+      totalItems: validItems.length,
+      retailItemCount: retailItems.length,
+      soldItemCount: soldItems.length,
       minPrice,
       maxPrice,
       avgPrice,
       medianPrice,
-      minSource: { site: findSiteForItem(sites, minItem), url: minItem.url, name: minItem.name },
-      maxSource: { site: findSiteForItem(sites, maxItem), url: maxItem.url, name: maxItem.name },
+      // 小売
+      retailMin,
+      // 落札相場
+      soldMedian,
+      soldAvg,
+      soldMin,
+      soldMax,
+      // 仕入れ目安
+      purchaseTarget,
+      minSource: minItem ? { site: findSiteForItem(sites, minItem), url: minItem.url, name: minItem.name } : null,
+      maxSource: maxItem ? { site: findSiteForItem(sites, maxItem), url: maxItem.url, name: maxItem.name } : null,
     };
   }
 
