@@ -149,6 +149,38 @@
   .reset-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 20px; color: var(--text); font-size: 14px; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
   .reset-btn:hover { border-color: var(--accent); }
 
+  /* Bookmarklet Setup */
+  .bookmarklet-setup {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    margin-bottom: 20px; overflow: hidden;
+  }
+  .bookmarklet-toggle {
+    padding: 14px 20px; cursor: pointer; display: flex; align-items: center;
+    justify-content: space-between; font-size: 14px; font-weight: 600;
+    color: var(--text-dim); transition: background 0.2s; user-select: none;
+  }
+  .bookmarklet-toggle:hover { background: var(--surface2); color: var(--text); }
+  .toggle-arrow { font-size: 12px; transition: transform 0.2s; }
+  .toggle-arrow.open { transform: rotate(180deg); }
+  .bookmarklet-content { padding: 0 20px 20px; display: none; }
+  .bookmarklet-content.open { display: block; }
+  .bookmarklet-desc { font-size: 13px; color: var(--text-dim); margin-bottom: 12px; padding-top: 4px; }
+  .bookmarklet-steps {
+    background: var(--surface2); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
+  }
+  .bookmarklet-steps .step { font-size: 13px; color: var(--text-dim); padding: 3px 0; }
+  .bookmarklet-steps .step strong { color: var(--accent-light); }
+  .bookmarklet-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+  .bookmarklet-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--surface2); border: 2px dashed var(--accent); border-radius: 12px;
+    padding: 14px 22px; text-decoration: none; color: var(--text); font-size: 14px; font-weight: 600;
+    cursor: grab; transition: all 0.2s; min-width: 170px; text-align: center; line-height: 1.5;
+  }
+  .bookmarklet-btn:hover { background: rgba(108,92,231,0.12); border-color: var(--accent-light); transform: translateY(-1px); }
+  .bookmarklet-btn small { color: var(--accent-light); font-size: 11px; font-weight: 400; margin-top: 4px; }
+  .bookmarklet-note { font-size: 11px; color: var(--text-dim); margin-top: 12px; padding: 8px 12px; background: var(--surface2); border-radius: 8px; }
+
   @media (max-width: 600px) {
     .product-top { flex-direction: column; align-items: center; }
     .product-image { width: 160px; height: 160px; }
@@ -165,7 +197,32 @@
 <div class="container">
   <div class="header">
     <h1>オークション仕入れ 価格チェッカー</h1>
-    <p>出品商品詳細PDFをアップロード → 市場価格を自動取得して表示します</p>
+    <p>PDFアップロード or ブックマークレット → 市場価格を自動取得して表示します</p>
+  </div>
+
+  <!-- ブックマークレット設定 -->
+  <div class="bookmarklet-setup">
+    <div class="bookmarklet-toggle" id="bookmarkletToggle">
+      <span>🔖 ブックマークレット設定（エコオク・オークネット対応）</span>
+      <span class="toggle-arrow" id="toggleArrow">▼</span>
+    </div>
+    <div class="bookmarklet-content" id="bookmarkletContent">
+      <p class="bookmarklet-desc">各サイトの商品ページで1クリックするだけで、自動的にこのアプリに商品情報を送信できます。PDFダウンロード不要！</p>
+      <div class="bookmarklet-steps">
+        <div class="step">① <strong>下のボタン</strong>をブラウザのブックマークバーに<strong>ドラッグ＆ドロップ</strong>して登録</div>
+        <div class="step">② エコオク／オークネットの商品ページを開く</div>
+        <div class="step">③ 登録したブックマークをクリック → このアプリが自動で開いて価格検索スタート 🚀</div>
+      </div>
+      <div class="bookmarklet-buttons">
+        <a class="bookmarklet-btn" id="ecoaucBookmarklet" href="#" onclick="alert('このボタンをブラウザのブックマークバーにドラッグして登録してください'); return false;">
+          🛍️ エコオク チェッカー<br><small>← ドラッグしてブックマーク登録</small>
+        </a>
+        <a class="bookmarklet-btn" id="aucnetBookmarklet" href="#" onclick="alert('このボタンをブラウザのブックマークバーにドラッグして登録してください'); return false;">
+          🏷️ オークネット チェッカー<br><small>← ドラッグしてブックマーク登録</small>
+        </a>
+      </div>
+      <div class="bookmarklet-note">💡 ブックマークバーが見えない場合：Chrome は Ctrl+Shift+B / Mac は ⌘+Shift+B で表示できます</div>
+    </div>
   </div>
 
   <div class="drop-zone" id="dropZone">
@@ -223,7 +280,7 @@
       <div class="search-grid" id="searchGrid"></div>
     </div>
 
-    <button class="reset-btn" id="resetBtn">← 別のPDFを読み込む</button>
+    <button class="reset-btn" id="resetBtn">← 別の商品を読み込む</button>
   </div>
 </div>
 
@@ -242,7 +299,155 @@ dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classL
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
 dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
 fileInput.addEventListener('change', e => { if (e.target.files[0]) processFile(e.target.files[0]); });
-resetBtn.addEventListener('click', () => { resultDiv.style.display = 'none'; dropZone.style.display = 'block'; fileInput.value = ''; });
+resetBtn.addEventListener('click', () => {
+  resultDiv.style.display = 'none';
+  dropZone.style.display = 'block';
+  document.querySelector('.bookmarklet-setup').style.display = 'block';
+  fileInput.value = '';
+});
+
+// ============================================================
+// ブックマークレットセクション開閉
+// ============================================================
+document.getElementById('bookmarkletToggle').addEventListener('click', () => {
+  document.getElementById('bookmarkletContent').classList.toggle('open');
+  document.getElementById('toggleArrow').classList.toggle('open');
+});
+
+// ============================================================
+// 外部URLを安全にfetchするためのプロキシヘルパー
+// ============================================================
+function getImageFetchUrl(url) {
+  if (!url) return url;
+  return url.startsWith('http') ? '/api/proxy-image?url=' + encodeURIComponent(url) : url;
+}
+
+// ============================================================
+// ブックマークレット本体（.toString()でhrefにセット）
+// ============================================================
+function _ecoaucBookmarklet() {
+  var APP = 'https://auction-price-checker.onrender.com';
+  var h1 = (document.querySelector('h1') || {}).innerText || '';
+  var brand = h1.split(/[\s（(▼]/)[0] || '';
+  var name = h1.replace(/\([^)]+\)/g, '').replace(/▼[^▼]*▼/g, '').replace(brand, '').trim();
+  var txt = document.body.innerText;
+  var rank = (txt.match(/([A-S])\s*ランク/) || [])[1] || '';
+  var desc = (txt.match(/〈商品説明〉[\r\n]+([\s\S]*?)(?=\n♥|\n開始価格)/) || [])[1] || '';
+  desc = desc.trim();
+  var imgs = [];
+  document.querySelectorAll('a[href*="assets.ecoauc.com/images"]').forEach(function(a) {
+    if (imgs.indexOf(a.href) < 0) imgs.push(a.href);
+  });
+  var sp = (txt.match(/開始価格[\s\S]*?¥\s*([\d,]+)/) || [])[1] || '';
+  sp = sp.replace(/,/g, '');
+  var shape = (txt.match(/形状コード[\r\n]+([^\r\n]+)/) || [])[1] || '';
+  shape = shape.trim();
+  var q = [brand, shape].filter(Boolean).join(' ');
+  var pq = [brand, name].filter(Boolean).join(' ').substring(0, 60);
+  var data = {
+    source: 'ecoauc', url: location.href,
+    maker: brand, makerNormalized: brand,
+    productName: name, productNameNormalized: name,
+    grade: rank, evaluation: rank, damage: desc,
+    images: imgs.slice(0, 10), startPrice: sp, shape: shape,
+    searchQuery: q, preciseQuery: pq
+  };
+  fetch(APP + '/api/from-page', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+  }).then(function(r) { return r.json(); })
+    .then(function(j) {
+      if (j.token) window.open(APP + '?token=' + j.token, '_blank');
+      else alert('エラー: データ送信失敗');
+    }).catch(function(e) { alert('エラー: ' + e.message); });
+}
+
+function _aucnetBookmarklet() {
+  var APP = 'https://auction-price-checker.onrender.com';
+  var txt = document.body.innerText;
+  var h1el = document.querySelector('h1,.itemName,[class*="item-name"],[class*="product-name"]');
+  var h1text = h1el ? h1el.innerText.trim() :
+    document.title.replace(/【[^】]*】/g, '').replace(/\s*[-|]\s*.*$/, '').trim();
+  var brandEl = document.querySelector('[class*="brand"],[class*="maker"],[class*="Brand"],[class*="Maker"]');
+  var brand = brandEl ? brandEl.innerText.trim() : h1text.split(/[\s　]/)[0] || '';
+  var rankEl = document.querySelector('[class*="rank"],[class*="grade"],[class*="Rank"],[class*="Grade"]');
+  var rank = rankEl ? rankEl.innerText.replace(/\s+/g, '').trim() :
+    (txt.match(/(?:ランク|グレード)[：:]\s*([A-S0-9]+)/) || [])[1] || '';
+  var descEl = document.querySelector('[class*="comment"],[class*="damage"],[class*="detail-desc"]');
+  var desc = descEl ? descEl.innerText.trim() : '';
+  var imgs = [];
+  document.querySelectorAll('img[src]').forEach(function(el) {
+    var s = el.src;
+    if (s && s.startsWith('http') && !s.match(/logo|icon|btn|arrow|sprite|\.gif/i) && imgs.indexOf(s) < 0) imgs.push(s);
+  });
+  var modelM = txt.match(/型番[：:\s]+([A-Z0-9\-]{3,})/);
+  var model = modelM ? modelM[1] : '';
+  var spM = txt.match(/(?:スタート|開始)価格?[：:¥￥\s]+([\d,]+)/);
+  var sp = spM ? spM[1].replace(/,/g, '') : '';
+  var q = [brand, h1text].filter(Boolean).join(' ').substring(0, 50);
+  var pq = model ? [brand, model].join(' ') : [brand, h1text].filter(Boolean).join(' ').substring(0, 50);
+  var data = {
+    source: 'aucnet', url: location.href,
+    maker: brand, makerNormalized: brand,
+    productName: h1text, productNameNormalized: h1text,
+    grade: rank, evaluation: rank, damage: desc,
+    images: imgs.slice(0, 10), startPrice: sp, modelNumber: model,
+    searchQuery: q, preciseQuery: pq
+  };
+  fetch(APP + '/api/from-page', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+  }).then(function(r) { return r.json(); })
+    .then(function(j) {
+      if (j.token) window.open(APP + '?token=' + j.token, '_blank');
+      else alert('エラー');
+    }).catch(function(e) { alert('エラー: ' + e.message); });
+}
+
+// ブックマークレットのhrefをセット
+(function() {
+  var eEl = document.getElementById('ecoaucBookmarklet');
+  var aEl = document.getElementById('aucnetBookmarklet');
+  if (eEl) eEl.href = 'javascript:(' + _ecoaucBookmarklet.toString() + ')()';
+  if (aEl) aEl.href = 'javascript:(' + _aucnetBookmarklet.toString() + ')()';
+})();
+
+// ============================================================
+// ブックマークレット経由データ処理（?token=xxx でアクセスされた時）
+// ============================================================
+async function processFromBookmarklet(token) {
+  dropZone.style.display = 'none';
+  document.querySelector('.bookmarklet-setup').style.display = 'none';
+  loading.style.display = 'block';
+  loadingText.textContent = 'ページデータを取得中...';
+
+  try {
+    const res = await fetch('/api/get-page-data/' + token);
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+
+    const data = json.product;
+    const imageUrl = (data.images && data.images[0]) ? data.images[0] : null;
+
+    renderProductCard(data, imageUrl);
+    renderImageSearch(data, imageUrl);
+    renderSearchLinks(data);
+
+    loading.style.display = 'none';
+    resultDiv.style.display = 'block';
+
+    window.history.replaceState({}, '', '/');
+    searchPrices(data.searchQuery, data.preciseQuery);
+  } catch (err) {
+    alert('データ取得エラー: ' + err.message);
+    dropZone.style.display = 'block';
+    document.querySelector('.bookmarklet-setup').style.display = 'block';
+    loading.style.display = 'none';
+  }
+}
+
+// ページロード時にトークンをチェック
+const _urlParams = new URLSearchParams(window.location.search);
+const _pageToken = _urlParams.get('token');
+if (_pageToken) processFromBookmarklet(_pageToken);
 
 async function processFile(file) {
   dropZone.style.display = 'none';
@@ -453,7 +658,7 @@ function renderImageSearch(data, imageDataUrl) {
     lensBtn.innerHTML = `<div class="btn-icon google-bg" style="font-size:20px;">⏳</div><div class="btn-info"><div class="btn-name">Google レンズで検索</div><div class="btn-desc">画像をアップロード中...</div></div>`;
     try {
       // dataUrl → Blob → multipart で /api/lens-proxy に送信
-      const res = await fetch(imageDataUrl);
+      const res = await fetch(getImageFetchUrl(imageDataUrl));
       const blob = await res.blob();
       const fd = new FormData();
       fd.append('image', blob, 'product.png');
@@ -488,7 +693,7 @@ function renderImageSearch(data, imageDataUrl) {
   copyBtn.innerHTML = `<div class="btn-icon" style="background:var(--accent);color:#fff;">📋</div><div class="btn-info"><div class="btn-name" id="copyBtnText">画像をコピー</div><div class="btn-desc">メルカリ等の検索画面に貼り付け用</div></div>`;
   copyBtn.addEventListener('click', async () => {
     try {
-      const res = await fetch(imageDataUrl); const blob = await res.blob();
+      const res = await fetch(getImageFetchUrl(imageDataUrl)); const blob = await res.blob();
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': new Blob([blob], { type: 'image/png' }) })]);
       const txt = document.getElementById('copyBtnText');
       txt.textContent = 'コピーしました!'; txt.classList.add('copy-success');
@@ -552,7 +757,7 @@ async function analyzeImageAndSearch(imageDataUrl, btn) {
   priceSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   try {
-    const res = await fetch(imageDataUrl);
+    const res = await fetch(getImageFetchUrl(imageDataUrl));
     const blob = await res.blob();
     const fd = new FormData();
     fd.append('image', blob, 'product.png');

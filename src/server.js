@@ -9,6 +9,18 @@ const { searchAllSites } = require('./scraper');
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const app = express();
+
+// ============================================================
+// CORS（ブックマークレットから別ドメイン経由でのPOSTを許可）
+// ============================================================
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
+
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 // 一時画像ストア（メモリ内、5分TTL）
@@ -19,6 +31,15 @@ setInterval(() => {
     if (now - data.timestamp > 5 * 60 * 1000) tempImages.delete(id);
   }
 }, 60 * 1000);
+
+// ページデータストア（ブックマークレット用、30分TTL）
+const pageDataStore = new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, data] of pageDataStore) {
+    if (now - data.timestamp > 30 * 60 * 1000) pageDataStore.delete(token);
+  }
+}, 5 * 60 * 1000);
 
 // 静的ファイル配信
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -136,6 +157,47 @@ app.post('/api/search-prices', express.json(), async (req, res) => {
   } catch (e) {
     console.error('Search error:', e);
     res.status(500).json({ error: '価格検索に失敗しました: ' + e.message });
+  }
+});
+
+// ============================================================
+// API: ブックマークレットからページデータを受信して一時保存
+// ============================================================
+app.post('/api/from-page', express.json(), (req, res) => {
+  const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  pageDataStore.set(token, { ...req.body, timestamp: Date.now() });
+  console.log(`[ブックマークレット] データ受信: ${req.body.source} / ${req.body.productName}`);
+  res.json({ success: true, token });
+});
+
+// ============================================================
+// API: トークンでページデータを取得
+// ============================================================
+app.get('/api/get-page-data/:token', (req, res) => {
+  const data = pageDataStore.get(req.params.token);
+  if (!data) return res.status(404).json({ error: 'データが見つかりません（期限切れの可能性があります）' });
+  res.json({ success: true, product: data });
+});
+
+// ============================================================
+// API: 外部画像プロキシ（ブックマークレット画像をサーバー経由で取得）
+// ============================================================
+app.get('/api/proxy-image', async (req, res) => {
+  const url = req.query.url;
+  if (!url) return res.status(400).send('url required');
+  try {
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': new URL(url).origin },
+    });
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    res.set('Content-Type', contentType);
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.send(buffer);
+  } catch (e) {
+    console.error('Proxy image error:', e.message);
+    res.status(500).send(e.message);
   }
 });
 
