@@ -172,8 +172,17 @@
   .bookmarklet-steps .step strong { color: var(--accent-light); }
   .bookmarklet-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
   .bookmarklet-note { font-size: 11px; color: var(--text-dim); margin-top: 12px; padding: 8px 12px; background: var(--surface2); border-radius: 8px; }
-  .bm-code-block { margin-bottom: 16px; }
-  .bm-code-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+  .bm-code-block { margin-bottom: 20px; }
+  .bm-code-label { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text); }
+  .bm-drag-link {
+    display: inline-block; background: var(--accent); color: #fff !important;
+    text-decoration: none; border-radius: 10px; padding: 12px 22px;
+    font-size: 14px; font-weight: 700; cursor: pointer; margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(108,92,231,0.4);
+  }
+  .bm-drag-link:hover { background: var(--accent-light); color: var(--bg) !important; }
+  .bm-reg-hint { font-size: 12px; color: var(--text-dim); margin-bottom: 10px; padding: 8px 12px; background: var(--surface2); border-radius: 8px; line-height: 1.6; }
+  .bm-reg-hint strong { color: var(--accent-light); }
   .bm-code-textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--accent-light); font-size: 11px; font-family: monospace; resize: none; height: 58px; margin-bottom: 6px; display: block; line-height: 1.4; }
   .bm-copy-btn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s; font-family: inherit; }
   .bm-copy-btn:hover { background: var(--accent-light); color: var(--bg); }
@@ -219,23 +228,23 @@
     </div>
     <div class="bookmarklet-content" id="bookmarkletContent">
       <p class="bookmarklet-desc">各サイトの商品ページで1クリックするだけで、自動的にこのアプリに商品情報を送信できます。PDFダウンロード不要！</p>
+
       <div class="bookmarklet-steps">
-        <div class="step">① <strong>「コードをコピー」</strong>ボタンを押す</div>
-        <div class="step">② ブラウザのブックマークバーを右クリック → <strong>「ページを追加」</strong>（または「ブックマークを追加」）を選ぶ</div>
-        <div class="step">③ 名前を入力し、<strong>URL欄にコピーしたコードをそのまま貼り付け</strong>て保存</div>
-        <div class="step">④ エコオク／オークネットの商品ページで登録したブックマークをクリック → <strong>そのタブが価格チェッカーに自動移動</strong>して価格検索スタート 🚀</div>
+        <div class="step">① 下のボタンを<strong>右クリック → 「リンクをブックマークに追加」</strong>で保存</div>
+        <div class="step">② エコオク／オークネットの商品ページを開く</div>
+        <div class="step">③ 保存したブックマークをクリック → <strong>そのタブが価格チェッカーに自動移動</strong>して検索スタート 🚀</div>
       </div>
 
       <div class="bm-code-block">
         <div class="bm-code-label">🛍️ エコオク チェッカー</div>
-        <textarea class="bm-code-textarea" id="ecoaucCode" readonly spellcheck="false"></textarea>
-        <button class="bm-copy-btn" onclick="copyCode('ecoaucCode', this)">コードをコピー</button>
+        <div class="bm-reg-hint">👆 下のボタンを<strong>右クリック →「リンクをブックマークに追加」</strong>で登録できます</div>
+        <a class="bm-drag-link" id="ecoaucLink" href="#">🛍️ エコオク チェッカー（右クリックして保存）</a>
       </div>
 
       <div class="bm-code-block">
         <div class="bm-code-label">🏷️ オークネット チェッカー</div>
-        <textarea class="bm-code-textarea" id="aucnetCode" readonly spellcheck="false"></textarea>
-        <button class="bm-copy-btn" onclick="copyCode('aucnetCode', this)">コードをコピー</button>
+        <div class="bm-reg-hint">👆 下のボタンを<strong>右クリック →「リンクをブックマークに追加」</strong>で登録できます</div>
+        <a class="bm-drag-link" id="aucnetLink" href="#">🏷️ オークネット チェッカー（右クリックして保存）</a>
       </div>
 
       <div class="bookmarklet-note">💡 ブックマークバーが見えない場合：Chrome は Ctrl+Shift+B（Mac: ⌘+Shift+B）で表示できます</div>
@@ -454,12 +463,18 @@ function _aucnetBookmarklet() {
     });
 }
 
-// テキストエリアにブックマークレットコードをセット
+// ブックマークレットリンクのhrefをセット（右クリック→「リンクをブックマークに追加」で登録可能）
 (function() {
-  var eEl = document.getElementById('ecoaucCode');
-  var aEl = document.getElementById('aucnetCode');
-  if (eEl) eEl.value = 'javascript:(' + _ecoaucBookmarklet.toString() + ')();';
-  if (aEl) aEl.value = 'javascript:(' + _aucnetBookmarklet.toString() + ')();';
+  var eLink = document.getElementById('ecoaucLink');
+  var aLink = document.getElementById('aucnetLink');
+  var eCode = document.getElementById('ecoaucCode');
+  var aCode = document.getElementById('aucnetCode');
+  var eBm = 'javascript:(' + _ecoaucBookmarklet.toString() + ')();';
+  var aBm = 'javascript:(' + _aucnetBookmarklet.toString() + ')();';
+  if (eLink) eLink.href = eBm;
+  if (aLink) aLink.href = aBm;
+  if (eCode) eCode.value = eBm;
+  if (aCode) aCode.value = aBm;
 })();
 
 // コードをクリップボードにコピー
