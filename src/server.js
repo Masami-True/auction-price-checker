@@ -161,6 +161,67 @@ app.post('/api/search-prices', express.json(), async (req, res) => {
 });
 
 // ============================================================
+// API: 複数画像 + タイトルから商品を精密識別（Claude Vision）
+// ============================================================
+app.post('/api/analyze-product', express.json(), async (req, res) => {
+  const { imageUrls, title, shape } = req.body;
+  if (!imageUrls || imageUrls.length === 0) {
+    return res.status(400).json({ error: '画像URLが必要です' });
+  }
+
+  try {
+    // 最大3枚の画像を取得してbase64化
+    const content = [];
+    let fetched = 0;
+    for (const url of imageUrls.slice(0, 3)) {
+      try {
+        const response = await fetch(url);
+        const ab = await response.arrayBuffer();
+        const base64 = Buffer.from(ab).toString('base64');
+        const mediaType = (response.headers.get('content-type') || 'image/jpeg').split(';')[0];
+        content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
+        fetched++;
+      } catch(e) { /* skip */ }
+    }
+    if (fetched === 0) throw new Error('画像の取得に失敗しました');
+
+    content.push({
+      type: 'text',
+      text: `商品画像が${fetched}枚あります。
+ページ情報 — タイトル:「${title || ''}」 形状:「${shape || ''}」
+
+この商品を日本のメルカリ・ヤフオク・フリマで価格調査するための検索クエリを生成してください。
+ブランド・モデル名・色・素材を正確に読み取り、以下のJSON形式のみで回答してください（説明文不要）:
+{
+  "brand": "ブランド名",
+  "model": "モデル名・ライン名",
+  "color": "色（日本語）",
+  "material": "素材（日本語）",
+  "searchQuery": "メルカリ・ヤフオク向け検索クエリ（ブランド+モデル+形状 スペース区切り）",
+  "preciseQuery": "精密クエリ（素材・色・型番も含む）"
+}`
+    });
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 400,
+      messages: [{ role: 'user', content }],
+    });
+
+    const text = message.content[0].text.trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('AI応答の解析に失敗しました: ' + text.substring(0, 100));
+
+    const result = JSON.parse(jsonMatch[0]);
+    console.log(`[AI識別] ${result.brand} ${result.model} → query: "${result.searchQuery}"`);
+    res.json({ success: true, ...result });
+  } catch(e) {
+    console.error('analyze-product error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================
 // API: ブックマークレットからページデータを受信して一時保存
 // ============================================================
 app.post('/api/from-page', express.json(), (req, res) => {

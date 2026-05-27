@@ -181,6 +181,19 @@
   .bookmarklet-btn small { color: var(--accent-light); font-size: 11px; font-weight: 400; margin-top: 4px; }
   .bookmarklet-note { font-size: 11px; color: var(--text-dim); margin-top: 12px; padding: 8px 12px; background: var(--surface2); border-radius: 8px; }
 
+  /* AI識別バッジ */
+  .ai-identified { font-size: 12px; background: rgba(108,92,231,0.12); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 14px; margin-bottom: 14px; color: var(--text-dim); }
+  .ai-identified strong { color: var(--accent-light); }
+
+  /* 仕入れ・販売目安 */
+  .buysell-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .buysell-card { background: var(--surface2); border-radius: 12px; padding: 16px; text-align: center; position: relative; }
+  .buysell-card .bs-label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+  .buysell-card .bs-value { font-size: 24px; font-weight: 800; }
+  .buysell-card.buy .bs-value { color: var(--blue); }
+  .buysell-card.sell .bs-value { color: var(--green); }
+  .buysell-card .bs-note { font-size: 11px; color: var(--text-dim); margin-top: 5px; line-height: 1.4; }
+
   @media (max-width: 600px) {
     .product-top { flex-direction: column; align-items: center; }
     .product-image { width: 160px; height: 160px; }
@@ -445,9 +458,47 @@ async function processFromBookmarklet(token) {
 
     loading.style.display = 'none';
     resultDiv.style.display = 'block';
-
     window.history.replaceState({}, '', '/');
-    searchPrices(data.searchQuery, data.preciseQuery);
+
+    // ── AI商品識別 → 精密クエリで価格検索 ──
+    const searching = document.getElementById('priceSearching');
+    const content = document.getElementById('priceSummaryContent');
+    searching.style.display = 'block';
+    content.style.display = 'none';
+    searching.querySelector('div:last-child').textContent = 'AIが商品画像を解析中...（精密クエリを生成しています）';
+
+    let finalQuery = data.searchQuery;
+    let finalPrecise = data.preciseQuery;
+    let aiInfo = null;
+
+    // 画像が1枚以上あればAI識別を試みる
+    if (data.images && data.images.length > 0) {
+      try {
+        const aiRes = await fetch('/api/analyze-product', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageUrls: data.images.slice(0, 3),
+            title: data.productName || '',
+            shape: data.shape || ''
+          })
+        });
+        const aiData = await aiRes.json();
+        if (aiData.success && aiData.searchQuery) {
+          aiInfo = aiData;
+          finalQuery = aiData.searchQuery;
+          finalPrecise = aiData.preciseQuery || aiData.searchQuery;
+          // 検索リンクも更新
+          renderSearchLinks({ ...data, makerNormalized: aiData.brand || data.makerNormalized,
+            lineType: aiData.model || data.lineType, shape: aiData.color ? (data.shape + ' ' + aiData.color).trim() : data.shape });
+        }
+      } catch(e) {
+        console.log('AI識別スキップ:', e.message);
+      }
+    }
+
+    searching.querySelector('div:last-child').textContent = '各サイトから価格を取得中...（10〜20秒ほどかかります）';
+    searchPrices(finalQuery, finalPrecise, aiInfo);
   } catch (err) {
     alert('データ取得エラー: ' + err.message);
     dropZone.style.display = 'block';
@@ -503,7 +554,7 @@ async function processFile(file) {
 // ============================================================
 // 価格検索（サーバーAPIを呼ぶ）
 // ============================================================
-async function searchPrices(query, preciseQuery) {
+async function searchPrices(query, preciseQuery, aiInfo) {
   const searching = document.getElementById('priceSearching');
   const content = document.getElementById('priceSummaryContent');
   searching.style.display = 'block';
@@ -517,7 +568,7 @@ async function searchPrices(query, preciseQuery) {
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
-    renderPriceSummary(data.results, query, preciseQuery);
+    renderPriceSummary(data.results, query, preciseQuery, aiInfo);
   } catch (e) {
     content.innerHTML = `<div style="color:var(--red);text-align:center;padding:20px;">価格取得に失敗しました: ${e.message}<br>下の手動リンクから各サイトで確認してください。</div>`;
     content.style.display = 'block';
@@ -525,13 +576,21 @@ async function searchPrices(query, preciseQuery) {
   }
 }
 
-function renderPriceSummary(results, query, preciseQuery) {
+function renderPriceSummary(results, query, preciseQuery, aiInfo) {
   const searching = document.getElementById('priceSearching');
   const content = document.getElementById('priceSummaryContent');
   searching.style.display = 'none';
 
+  let html = '';
+
+  // AI識別結果バッジ
+  if (aiInfo && aiInfo.brand) {
+    const parts = [aiInfo.brand, aiInfo.model, aiInfo.color, aiInfo.material].filter(Boolean);
+    html += `<div class="ai-identified">✦ AI識別：<strong>${parts.join(' / ')}</strong></div>`;
+  }
+
   // 使用クエリの表示
-  let html = `<div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;padding:10px 14px;background:var(--surface2);border-radius:8px;">
+  html += `<div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;padding:10px 14px;background:var(--surface2);border-radius:8px;">
     📝 検索クエリ：<span style="color:var(--text);">${query}</span>
     ${preciseQuery && preciseQuery !== query ? `／ 楽天・Yahoo: <span style="color:var(--accent-light);">${preciseQuery}</span>` : ''}
   </div>`;
@@ -582,6 +641,32 @@ function renderPriceSummary(results, query, preciseQuery) {
     html += '</div>';
   });
   html += '</div>';
+
+  // 仕入れ・販売目安
+  if (results.summary) {
+    const s = results.summary;
+    // 仕入れ目安：中央値の50%（中古品の一般的な買取率）
+    const buyTarget = Math.round(s.medianPrice * 0.5);
+    // 販売推奨：最安値より少し安い or 中央値の85%（相場の中に入れる）
+    const sellTarget = Math.round(Math.min(s.minPrice * 0.95, s.medianPrice * 0.85));
+    const margin = sellTarget - buyTarget;
+    html += `
+    <div class="buysell-row">
+      <div class="buysell-card buy">
+        <div class="bs-label">💴 仕入れ目安</div>
+        <div class="bs-value">¥${buyTarget.toLocaleString()}</div>
+        <div class="bs-note">中央値（¥${s.medianPrice.toLocaleString()}）の約50%</div>
+      </div>
+      <div class="buysell-card sell">
+        <div class="bs-label">🏷️ 販売推奨価格</div>
+        <div class="bs-value">¥${sellTarget.toLocaleString()}</div>
+        <div class="bs-note">想定利益 ¥${margin.toLocaleString()}（${Math.round(margin/sellTarget*100)}%）</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text-dim);margin-top:8px;text-align:center;">
+      ※ 目安は市場中央値ベースの参考値です。状態・付属品・需要により調整してください。
+    </div>`;
+  }
 
   content.innerHTML = html;
   content.style.display = 'block';
