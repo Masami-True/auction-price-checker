@@ -511,16 +511,18 @@ function renderSearchLinks(data) {
   const q = [brand, line, shape].filter(Boolean).join(' ');
 
   const sites = [];
+  sites.push(
+    { name: 'Google ショッピング', desc: '横断的な価格比較', icon: 'G', cls: 'google-bg', url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(q)}` },
+  );
   if (modelNo) sites.push({ name: 'Google（型番検索）', desc: `型番「${modelNo}」で定価・詳細を検索`, icon: 'G', cls: 'google-bg', url: `https://www.google.com/search?q=${encodeURIComponent(brand+' '+modelNo+' 定価')}` });
   sites.push(
-    { name: 'メルカリ', desc: '販売中・sold両方の相場確認', icon: 'M', cls: 'mercari-bg', url: `https://jp.mercari.com/search?keyword=${encodeURIComponent(q)}` },
-    { name: 'メルカリ（SOLD）', desc: '成約済みの実勢価格を確認', icon: 'M', cls: 'mercari-bg', url: `https://jp.mercari.com/search?keyword=${encodeURIComponent(q)}&status=sold_out` },
     { name: 'ヤフオク!', desc: '現在出品中のオークション', icon: 'Y', cls: 'yahoo-bg', url: `https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(q)}&auccat=0` },
     { name: 'ヤフオク!（落札相場）', desc: '過去の落札価格データ', icon: 'Y', cls: 'yahoo-bg', url: `https://auctions.yahoo.co.jp/closedsearch/closedsearch?p=${encodeURIComponent(q)}&auccat=0` },
     { name: 'オークファン（相場概要）', desc: '平均落札価格・価格推移グラフを表示', icon: 'AF', cls: 'aucfan-bg', url: `https://aucfan.com/intro/q-${encodeURIComponent(q)}/` },
     { name: 'オークファン（落札一覧）', desc: '過去の落札データを一覧で確認', icon: 'AF', cls: 'aucfan-bg', url: `https://aucfan.com/search1/q-${encodeURIComponent(q)}/` },
     { name: '楽天市場', desc: 'EC販売価格の確認', icon: 'R', cls: 'rakuten-bg', url: `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(q)}/` },
-    { name: 'Google ショッピング', desc: '横断的な価格比較', icon: 'G', cls: 'google-bg', url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(q)}` },
+    { name: 'メルカリ', desc: '販売中・sold両方の相場確認', icon: 'M', cls: 'mercari-bg', url: `https://jp.mercari.com/search?keyword=${encodeURIComponent(q)}` },
+    { name: 'メルカリ（SOLD）', desc: '成約済みの実勢価格を確認', icon: 'M', cls: 'mercari-bg', url: `https://jp.mercari.com/search?keyword=${encodeURIComponent(q)}&status=sold_out` },
   );
 
   sites.forEach(s => {

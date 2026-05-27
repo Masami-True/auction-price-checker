@@ -298,18 +298,18 @@ async function fetchWithTimeout(url, timeoutMs = 25000, ua) {
 async function searchAllSites(query, preciseQuery) {
   const pq = preciseQuery || query;
   const scrapers = [
-    scrapeMercari(query),
+    scrapeYahooShopping(pq),  // Googleショッピング相当（精密クエリ優先）
     scrapeYahooAuctions(query),
-    scrapeRakuten(pq),        // 楽天は精密クエリ優先
     scrapeAucfree(query),
-    scrapeYahooShopping(pq),  // Yahooショッピングも精密クエリ優先
+    scrapeRakuten(pq),        // 楽天は精密クエリ優先
+    scrapeMercari(query),     // メルカリは最後
   ];
 
   const allResults = await Promise.allSettled(scrapers);
 
   const sites = allResults.map((r, i) => {
     if (r.status === 'fulfilled') return r.value;
-    const names = ['メルカリ', 'ヤフオク!', '楽天市場', 'オークフリー', 'Yahooショッピング'];
+    const names = ['Yahooショッピング', 'ヤフオク!', 'オークフリー', '楽天市場', 'メルカリ'];
     return { site: names[i], items: [], error: r.reason?.message || '取得失敗' };
   });
 
