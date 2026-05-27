@@ -230,27 +230,24 @@
       <p class="bookmarklet-desc">各サイトの商品ページで1クリックするだけで、自動的にこのアプリに商品情報を送信できます。PDFダウンロード不要！</p>
 
       <div class="bookmarklet-steps">
-        <div class="step">① 下の<strong>「URLをコピー」</strong>ボタンを押す</div>
-        <div class="step">② <strong>Ctrl+Shift+O</strong> でブックマークマネージャーを開く</div>
-        <div class="step">③ 右上の「︙」→「新しいブックマークを追加」→ 名前を入力してURL欄に<strong>Ctrl+V</strong>で貼り付け → 保存</div>
-        <div class="step">④ エコオク／オークネットの商品ページで登録したブックマークをクリック → <strong>そのタブが価格チェッカーに自動移動</strong> 🚀</div>
+        <div class="step">① ブックマークバーが見えない場合: <strong>Ctrl+Shift+B</strong>（Mac: <strong>⌘+Shift+B</strong>）で表示する</div>
+        <div class="step">② 下の紫ボタンを、ブラウザ上部の<strong>ブックマークバーにドラッグ</strong>して離す → それだけで完了 🎉</div>
+        <div class="step" style="color:var(--text-dim);font-size:12px;">※ ドラッグできない場合は「URLをコピー」→ ブックマークマネージャー（Ctrl+Shift+O）で手動登録</div>
       </div>
 
       <div class="bm-code-block">
         <div class="bm-code-label">🛍️ エコオク チェッカー</div>
-        <div class="bm-reg-hint">⬇️ このURLをコピーして、ブックマークのURL欄に貼り付けてください（<strong>たった100文字</strong>）</div>
-        <textarea class="bm-code-textarea" id="ecoaucCode" readonly spellcheck="false">javascript:fetch('https://auction-price-checker.onrender.com/bm/eco.js').then(r=>r.text()).then(eval)</textarea>
-        <button class="bm-copy-btn" onclick="copyCode('ecoaucCode', this)">URLをコピー</button>
+        <a class="bm-drag-link" id="ecoaucLink" href="javascript:fetch('https://auction-price-checker.onrender.com/bm/eco.js').then(r=>r.text()).then(eval)">📌 エコオク チェッカー</a>
+        <div class="bm-reg-hint" style="margin-top:8px;">↑ このボタンをブックマークバーへドラッグ　／　<a href="#" onclick="copyBmUrl('eco',this);return false;" style="color:var(--accent-light);">URLをコピー</a></div>
       </div>
 
       <div class="bm-code-block">
         <div class="bm-code-label">🏷️ オークネット チェッカー</div>
-        <div class="bm-reg-hint">⬇️ このURLをコピーして、ブックマークのURL欄に貼り付けてください（<strong>たった100文字</strong>）</div>
-        <textarea class="bm-code-textarea" id="aucnetCode" readonly spellcheck="false">javascript:fetch('https://auction-price-checker.onrender.com/bm/aucnet.js').then(r=>r.text()).then(eval)</textarea>
-        <button class="bm-copy-btn" onclick="copyCode('aucnetCode', this)">URLをコピー</button>
+        <a class="bm-drag-link" id="aucnetLink" href="javascript:fetch('https://auction-price-checker.onrender.com/bm/aucnet.js').then(r=>r.text()).then(eval)">📌 オークネット チェッカー</a>
+        <div class="bm-reg-hint" style="margin-top:8px;">↑ このボタンをブックマークバーへドラッグ　／　<a href="#" onclick="copyBmUrl('aucnet',this);return false;" style="color:var(--accent-light);">URLをコピー</a></div>
       </div>
 
-      <div class="bookmarklet-note">💡 ブックマークバーが見えない場合：Chrome は Ctrl+Shift+B（Mac: ⌘+Shift+B）で表示できます</div>
+      <div class="bookmarklet-note">💡 登録後、エコオク／オークネットの商品ページでブックマークをクリックすると、そのタブが自動的に価格チェッカーに移動します 🚀</div>
     </div>
   </div>
 
@@ -477,6 +474,27 @@ function _aucnetBookmarklet() {
   if (eLink) eLink.href = eBm;
   if (aLink) aLink.href = aBm;
 })();
+
+// ブックマークレット短縮URLをコピー
+function copyBmUrl(site, link) {
+  var urls = {
+    eco: "javascript:fetch('https://auction-price-checker.onrender.com/bm/eco.js').then(r=>r.text()).then(eval)",
+    aucnet: "javascript:fetch('https://auction-price-checker.onrender.com/bm/aucnet.js').then(r=>r.text()).then(eval)"
+  };
+  var url = urls[site];
+  var orig = link.textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(function() {
+      link.textContent = '✅ コピーしました！';
+      setTimeout(function() { link.textContent = orig; }, 2000);
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    link.textContent = '✅ コピーしました！';
+    setTimeout(function() { link.textContent = orig; }, 2000);
+  }
+}
 
 // コードをクリップボードにコピー
 function copyCode(id, btn) {
