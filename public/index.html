@@ -237,13 +237,13 @@
 
       <div class="bm-code-block">
         <div class="bm-code-label">🛍️ エコオク チェッカー</div>
-        <a class="bm-drag-link" id="ecoaucLink" href="javascript:fetch('https://auction-price-checker.onrender.com/bm/eco.js').then(r=>r.text()).then(eval)">📌 エコオク チェッカー</a>
+        <a class="bm-drag-link" id="ecoaucLink" href="javascript:!function(){var t=document.createElement('div');t.id='_bmt';t.style='position:fixed;top:10px;right:10px;background:#6c5ce7;color:#fff;padding:11px 16px;border-radius:8px;z-index:9999;font-size:13px;font-family:sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.3)';t.textContent='⏳ 価格チェッカー起動中...';document.body.appendChild(t);fetch('https://auction-price-checker.onrender.com/bm/eco.js').then(function(r){return r.text()}).then(eval).catch(function(){t.style.background='#e17055';t.textContent='❌ 失敗。もう一度クリック（初回は50秒かかります）';setTimeout(function(){t.remove()},9000)})}()">📌 エコオク チェッカー</a>
         <div class="bm-reg-hint" style="margin-top:8px;">↑ このボタンをブックマークバーへドラッグ　／　<a href="#" onclick="copyBmUrl('eco',this);return false;" style="color:var(--accent-light);">URLをコピー</a></div>
       </div>
 
       <div class="bm-code-block">
         <div class="bm-code-label">🏷️ オークネット チェッカー</div>
-        <a class="bm-drag-link" id="aucnetLink" href="javascript:fetch('https://auction-price-checker.onrender.com/bm/aucnet.js').then(r=>r.text()).then(eval)">📌 オークネット チェッカー</a>
+        <a class="bm-drag-link" id="aucnetLink" href="javascript:!function(){var t=document.createElement('div');t.id='_bmt';t.style='position:fixed;top:10px;right:10px;background:#6c5ce7;color:#fff;padding:11px 16px;border-radius:8px;z-index:9999;font-size:13px;font-family:sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.3)';t.textContent='⏳ 価格チェッカー起動中...';document.body.appendChild(t);fetch('https://auction-price-checker.onrender.com/bm/aucnet.js').then(function(r){return r.text()}).then(eval).catch(function(){t.style.background='#e17055';t.textContent='❌ 失敗。もう一度クリック（初回は50秒かかります）';setTimeout(function(){t.remove()},9000)})}()">📌 オークネット チェッカー</a>
         <div class="bm-reg-hint" style="margin-top:8px;">↑ このボタンをブックマークバーへドラッグ　／　<a href="#" onclick="copyBmUrl('aucnet',this);return false;" style="color:var(--accent-light);">URLをコピー</a></div>
       </div>
 
@@ -477,9 +477,10 @@ function _aucnetBookmarklet() {
 
 // ブックマークレット短縮URLをコピー
 function copyBmUrl(site, link) {
+  var base = "javascript:!function(){var t=document.createElement('div');t.id='_bmt';t.style='position:fixed;top:10px;right:10px;background:#6c5ce7;color:#fff;padding:11px 16px;border-radius:8px;z-index:9999;font-size:13px;font-family:sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.3)';t.textContent='⏳ 価格チェッカー起動中...';document.body.appendChild(t);fetch('https://auction-price-checker.onrender.com/bm/SITE.js').then(function(r){return r.text()}).then(eval).catch(function(){t.style.background='#e17055';t.textContent='❌ 失敗。もう一度クリック（初回は50秒かかります）';setTimeout(function(){t.remove()},9000)})}()";
   var urls = {
-    eco: "javascript:fetch('https://auction-price-checker.onrender.com/bm/eco.js').then(r=>r.text()).then(eval)",
-    aucnet: "javascript:fetch('https://auction-price-checker.onrender.com/bm/aucnet.js').then(r=>r.text()).then(eval)"
+    eco: base.replace('SITE', 'eco'),
+    aucnet: base.replace('SITE', 'aucnet')
   };
   var url = urls[site];
   var orig = link.textContent;

@@ -1,9 +1,15 @@
 (function(){
   var APP='https://auction-price-checker.onrender.com';
-  var t=document.createElement('div');
-  t.style.cssText='position:fixed;top:16px;right:16px;background:#6c5ce7;color:#fff;padding:14px 20px;border-radius:10px;z-index:99999;font-size:14px;font-family:sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.3);max-width:300px;line-height:1.5;';
-  t.textContent='⏳ 送信中...しばらお待ちください';
-  document.body.appendChild(t);
+
+  // ローダーが作ったトーストを再利用（なければ新規作成）
+  var t=document.getElementById('_bmt');
+  if(!t){
+    t=document.createElement('div');
+    t.id='_bmt';
+    document.body.appendChild(t);
+  }
+  t.style.cssText='position:fixed;top:16px;right:16px;background:#6c5ce7;color:#fff;padding:14px 20px;border-radius:10px;z-index:99999;font-size:14px;font-family:sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.3);max-width:320px;line-height:1.5;';
+  t.textContent='⏳ 商品情報を読み取り中...';
 
   // エコオクはh1がなくh2に「ブランド名\n(SKU)▼注意▼ブランド 商品名」が入る
   var h2el=document.querySelector('h2');
@@ -45,6 +51,8 @@
     searchQuery:q,preciseQuery:pq
   };
 
+  t.textContent='⏳ 送信中...';
+
   fetch(APP+'/api/from-page',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
   .then(function(r){return r.json();})
   .then(function(j){
@@ -60,7 +68,7 @@
   })
   .catch(function(e){
     t.style.background='#e17055';
-    t.textContent='❌ サーバーに接続できません。初回は起動に50秒かかります。もう一度クリックしてください。';
+    t.textContent='❌ サーバーエラー。もう一度クリックしてください。';
     setTimeout(function(){t.remove();},8000);
   });
 })();
