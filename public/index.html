@@ -883,21 +883,35 @@ function renderSearchLinks(data) {
   const line = data.lineType ? data.lineType.replace(/[（）()]/g, ' ').replace(/バッグ/g, '').trim() : '';
   const shape = data.shape || '';
   const modelNo = data.modelNumber || '';
-  const q = [brand, line, shape].filter(Boolean).join(' ');
 
+  // ブックマークレット or AI が生成した精密クエリを優先使用
+  const fallbackQ = [brand, line, shape].filter(Boolean).join(' ') || brand;
+  const q = data.searchQuery || fallbackQ;
+  const precise = data.preciseQuery || q;
+
+  const APP_URL = 'https://auction-price-checker.onrender.com';
   const sites = [];
+
+  // 🔍 Google レンズ（画像検索）― 最も正確な類似品・相場検索
+  const firstImg = data.images && data.images[0];
+  if (firstImg && firstImg.startsWith('http')) {
+    const proxyUrl = APP_URL + '/api/proxy-image?url=' + encodeURIComponent(firstImg);
+    const lensUrl = 'https://lens.google.com/uploadbyurl?url=' + encodeURIComponent(proxyUrl);
+    sites.push({ name: 'Google レンズ（画像検索）', desc: '商品画像から類似品・中古相場を検索（最も正確）', icon: '📷', cls: 'google-bg', url: lensUrl });
+  }
+
   sites.push(
-    { name: 'Google ショッピング', desc: '横断的な価格比較', icon: 'G', cls: 'google-bg', url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(q)}` },
+    { name: 'Google ショッピング', desc: `「${precise}」で横断価格比較`, icon: 'G', cls: 'google-bg', url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(precise)}` },
   );
   if (modelNo) sites.push({ name: 'Google（型番検索）', desc: `型番「${modelNo}」で定価・詳細を検索`, icon: 'G', cls: 'google-bg', url: `https://www.google.com/search?q=${encodeURIComponent(brand+' '+modelNo+' 定価')}` });
   sites.push(
-    { name: 'ヤフオク!', desc: '現在出品中のオークション', icon: 'Y', cls: 'yahoo-bg', url: `https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(q)}&auccat=0` },
-    { name: 'ヤフオク!（落札相場）', desc: '過去の落札価格データ', icon: 'Y', cls: 'yahoo-bg', url: `https://auctions.yahoo.co.jp/closedsearch/closedsearch?p=${encodeURIComponent(q)}&auccat=0` },
-    { name: 'オークファン（相場概要）', desc: '平均落札価格・価格推移グラフを表示', icon: 'AF', cls: 'aucfan-bg', url: `https://aucfan.com/intro/q-${encodeURIComponent(q)}/` },
-    { name: 'オークファン（落札一覧）', desc: '過去の落札データを一覧で確認', icon: 'AF', cls: 'aucfan-bg', url: `https://aucfan.com/search1/q-${encodeURIComponent(q)}/` },
-    { name: '楽天市場', desc: 'EC販売価格の確認', icon: 'R', cls: 'rakuten-bg', url: `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(q)}/` },
-    { name: 'メルカリ', desc: '販売中・sold両方の相場確認', icon: 'M', cls: 'mercari-bg', url: `https://jp.mercari.com/search?keyword=${encodeURIComponent(q)}` },
-    { name: 'メルカリ（SOLD）', desc: '成約済みの実勢価格を確認', icon: 'M', cls: 'mercari-bg', url: `https://jp.mercari.com/search?keyword=${encodeURIComponent(q)}&status=sold_out` },
+    { name: 'ヤフオク!', desc: `「${q}」で出品中を検索`, icon: 'Y', cls: 'yahoo-bg', url: `https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(q)}&auccat=0` },
+    { name: 'ヤフオク!（落札相場）', desc: `「${q}」で過去の落札価格を確認`, icon: 'Y', cls: 'yahoo-bg', url: `https://auctions.yahoo.co.jp/closedsearch/closedsearch?p=${encodeURIComponent(q)}&auccat=0` },
+    { name: 'オークファン（相場概要）', desc: `「${q}」で平均落札価格・価格推移グラフを表示`, icon: 'AF', cls: 'aucfan-bg', url: `https://aucfan.com/intro/q-${encodeURIComponent(q)}/` },
+    { name: 'オークファン（落札一覧）', desc: `「${q}」で過去の落札データを一覧で確認`, icon: 'AF', cls: 'aucfan-bg', url: `https://aucfan.com/search1/q-${encodeURIComponent(q)}/` },
+    { name: '楽天市場', desc: `「${precise}」でEC販売価格を確認`, icon: 'R', cls: 'rakuten-bg', url: `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(precise)}/` },
+    { name: 'メルカリ', desc: `「${precise}」で販売中・sold両方の相場確認`, icon: 'M', cls: 'mercari-bg', url: `https://jp.mercari.com/search?keyword=${encodeURIComponent(precise)}` },
+    { name: 'メルカリ（SOLD）', desc: `「${precise}」で成約済みの実勢価格を確認`, icon: 'M', cls: 'mercari-bg', url: `https://jp.mercari.com/search?keyword=${encodeURIComponent(precise)}&status=sold_out` },
   );
 
   sites.forEach(s => {
