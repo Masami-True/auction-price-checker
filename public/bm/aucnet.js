@@ -50,7 +50,8 @@
   var sp=spM?spM[1].replace(/,/g,''):'';
 
   // ② 精密クエリ
-  var GENERIC=/^(バッグ|鞄|財布|長財布|短財布|二つ折り|トートバッグ|ショルダーバッグ|ハンドバッグ|ポーチ|クラッチ|リュック)$/;
+  // 長財布・短財布・二つ折りは商品種別を絞る重要語なので除外しない
+  var GENERIC=/^(バッグ|鞄|財布|トートバッグ|ショルダーバッグ|ハンドバッグ|ポーチ|クラッチ|リュック)$/;
   var titleWords=h1text.replace(brand,'').trim().split(/\s+/).filter(function(w){
     return w.length>1&&!GENERIC.test(w);
   }).slice(0,4);
