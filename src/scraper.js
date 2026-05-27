@@ -20,10 +20,11 @@ function headers(ua) {
 // メルカリ（Googlebot UAでSSRコンテンツを取得）
 // ============================================================
 async function scrapeMercari(query) {
-  const results = { site: 'メルカリ', items: [], error: null };
+  const onSaleUrl = `https://jp.mercari.com/search?keyword=${encodeURIComponent(query)}`;
+  const soldUrl = `https://jp.mercari.com/search?keyword=${encodeURIComponent(query)}&status=sold_out`;
+  const results = { site: 'メルカリ', items: [], error: null, searchUrl: onSaleUrl };
   try {
-    const onSaleUrl = `https://jp.mercari.com/search?keyword=${encodeURIComponent(query)}`;
-    const soldUrl = `https://jp.mercari.com/search?keyword=${encodeURIComponent(query)}&status=sold_out`;
+
 
     const [onSaleRes, soldRes] = await Promise.allSettled([
       fetchWithTimeout(onSaleUrl, 25000, UA_BOT),
@@ -65,10 +66,11 @@ async function scrapeMercari(query) {
 // ヤフオク（出品中 & 落札済み）
 // ============================================================
 async function scrapeYahooAuctions(query) {
-  const results = { site: 'ヤフオク!', items: [], error: null };
+  const activeUrl = `https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(query)}&auccat=0`;
+  const closedUrl = `https://auctions.yahoo.co.jp/closedsearch/closedsearch?p=${encodeURIComponent(query)}&auccat=0`;
+  const results = { site: 'ヤフオク!', items: [], error: null, searchUrl: closedUrl };
   try {
-    const activeUrl = `https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(query)}&auccat=0`;
-    const closedUrl = `https://auctions.yahoo.co.jp/closedsearch/closedsearch?p=${encodeURIComponent(query)}&auccat=0`;
+
 
     const [activeRes, closedRes] = await Promise.allSettled([
       fetchWithTimeout(activeUrl),
@@ -110,7 +112,7 @@ async function scrapeYahooAuctions(query) {
 // 楽天市場（公式API優先 / スクレイピングフォールバック）
 // ============================================================
 async function scrapeRakuten(query) {
-  const results = { site: '楽天市場', items: [], error: null };
+  const results = { site: '楽天市場', items: [], error: null, searchUrl: `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(query)}/` };
   const appId = process.env.RAKUTEN_APP_ID;
 
   try {
@@ -159,7 +161,7 @@ async function scrapeRakuten(query) {
 // オークフリー（落札相場）
 // ============================================================
 async function scrapeAucfree(query) {
-  const results = { site: 'オークフリー', items: [], error: null };
+  const results = { site: 'オークフリー', items: [], error: null, searchUrl: `https://aucfree.com/search?q=${encodeURIComponent(query)}` };
 
   // aucfreeは直近30日のデータのみのため、0件の場合はクエリを短縮してリトライ
   const queries = buildAucfreeQueries(query);
@@ -235,9 +237,10 @@ function buildAucfreeQueries(query) {
 // Yahooショッピング（Google ShoppingはJavaScript必須のため代替）
 // ============================================================
 async function scrapeYahooShopping(query) {
-  const results = { site: 'Yahooショッピング', items: [], error: null };
+  const url = `https://shopping.yahoo.co.jp/search?p=${encodeURIComponent(query)}`;
+  const results = { site: 'Yahooショッピング', items: [], error: null, searchUrl: url };
   try {
-    const url = `https://shopping.yahoo.co.jp/search?p=${encodeURIComponent(query)}`;
+
     const html = await fetchWithTimeout(url, 25000);
     const $ = cheerio.load(html);
 

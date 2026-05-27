@@ -714,8 +714,11 @@ function renderPriceSummary(results, query, preciseQuery, aiInfo) {
   html += '<div class="site-breakdown">';
   results.sites.forEach(site => {
     const prices = site.items.map(i => i.price).filter(p => p > 0);
+    const nameHtml = site.searchUrl
+      ? `<a href="${site.searchUrl}" target="_blank" rel="noopener" style="color:var(--accent-light);text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${site.site} ↗</a>`
+      : site.site;
     html += `<div class="site-row">
-      <div class="site-name-col">${site.site}</div>`;
+      <div class="site-name-col">${nameHtml}</div>`;
     if (site.error) {
       html += `<div class="site-error">取得失敗</div>`;
     } else if (prices.length === 0) {
@@ -1030,50 +1033,16 @@ function renderSearchLinks(data) {
     grid.appendChild(a);
   });
 
-  // メルカリ画像検索ボタン（テキスト検索より正確）
-  if (firstImg && firstImg.startsWith('http')) {
-    const proxyUrl = APP_URL + '/api/proxy-image?url=' + encodeURIComponent(firstImg);
-    const btn = document.createElement('button');
-    btn.className = 'search-link mercari-img-btn';
-    btn.style.cssText = 'width:100%;text-align:left;cursor:pointer;background:none;border:none;padding:0;font:inherit;';
-    btn.innerHTML = `<div class="site-icon mercari-bg">📸</div><div class="site-info"><div class="site-name">メルカリ（画像検索）</div><div class="site-desc">商品画像をコピー → メルカリのカメラアイコンで貼り付け</div></div><div class="arrow">→</div>`;
-    btn.addEventListener('click', async () => {
-      const origHtml = btn.innerHTML;
-      btn.innerHTML = `<div class="site-icon mercari-bg">⏳</div><div class="site-info"><div class="site-name">画像を取得中...</div><div class="site-desc">しばらくお待ちください</div></div>`;
-      try {
-        const res = await fetch(proxyUrl);
-        const blob = await res.blob();
-        const pngBlob = new Blob([blob], { type: 'image/png' });
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
-        // 新タブでメルカリを開く
-        window.open('https://jp.mercari.com/', '_blank');
-        // トーストを表示
-        let toast = document.getElementById('_mercari_toast');
-        if (!toast) {
-          toast = document.createElement('div');
-          toast.id = '_mercari_toast';
-          document.body.appendChild(toast);
-        }
-        toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#ff6b6b;color:#fff;padding:16px 24px;border-radius:12px;z-index:99999;font-size:14px;font-family:sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-width:360px;line-height:1.6;text-align:center;';
-        toast.innerHTML = '📸 画像をコピーしました！<br>メルカリの検索バー右のカメラアイコン📷をクリックして貼り付けてください';
-        btn.innerHTML = `<div class="site-icon mercari-bg">✅</div><div class="site-info"><div class="site-name">メルカリ（画像検索）</div><div class="site-desc">画像をコピーしました！カメラアイコンで貼り付けてください</div></div>`;
-        setTimeout(() => {
-          if (toast.parentNode) toast.remove();
-          btn.innerHTML = origHtml;
-        }, 8000);
-      } catch (e) {
-        btn.innerHTML = `<div class="site-icon mercari-bg">❌</div><div class="site-info"><div class="site-name">メルカリ（画像検索）</div><div class="site-desc">エラー: クリップボードへのアクセスが拒否されました</div></div>`;
-        setTimeout(() => { btn.innerHTML = origHtml; }, 4000);
-      }
-    });
-    grid.appendChild(btn);
-  } else {
-    // 画像がない場合はテキスト検索にフォールバック
+  // メルカリ（販売中 & SOLD）テキスト検索
+  [
+    { name: 'メルカリ', desc: `「${precise}」で販売中・sold両方の相場確認`, url: `https://jp.mercari.com/search?keyword=${encodeURIComponent(precise)}` },
+    { name: 'メルカリ（SOLD）', desc: `「${precise}」で成約済みの実勢価格を確認`, url: `https://jp.mercari.com/search?keyword=${encodeURIComponent(precise)}&status=sold_out` },
+  ].forEach(s => {
     const a = document.createElement('a');
-    a.className = 'search-link'; a.href = `https://jp.mercari.com/search?keyword=${encodeURIComponent(precise)}`; a.target = '_blank'; a.rel = 'noopener';
-    a.innerHTML = `<div class="site-icon mercari-bg">M</div><div class="site-info"><div class="site-name">メルカリ</div><div class="site-desc">「${precise}」で検索</div></div><div class="arrow">→</div>`;
+    a.className = 'search-link'; a.href = s.url; a.target = '_blank'; a.rel = 'noopener';
+    a.innerHTML = `<div class="site-icon mercari-bg">M</div><div class="site-info"><div class="site-name">${s.name}</div><div class="site-desc">${s.desc}</div></div><div class="arrow">→</div>`;
     grid.appendChild(a);
-  }
+  });
 }
 
 // ============================================================
