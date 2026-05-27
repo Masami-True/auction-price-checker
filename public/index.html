@@ -355,10 +355,17 @@ function _ecoaucBookmarklet() {
     setTimeout(function() { t.remove(); }, 6000);
     return;
   }
-  var h1 = (document.querySelector('h1') || {}).innerText || '';
-  var brand = h1.split(/[\s　（(▼]/)[0] || '';
-  var clean = h1.replace(/\([^)]+\)/g, '').replace(/▼[^▼]*▼/g, '')
-    .replace(new RegExp(brand + '\\s*', 'gi'), '').replace(/\s+/g, ' ').trim();
+  // エコオクはh1がなくh2に「ブランド名\n(SKU)▼注意▼ブランド 商品名」が入る
+  var h2el = document.querySelector('h2');
+  var fullTitle = h2el ? h2el.innerText.trim() : '';
+  var titleLines = fullTitle.split('\n').map(function(s){return s.trim();}).filter(Boolean);
+  var brand = titleLines[0] || '';
+  var titleLine = titleLines[1] || titleLines[0] || '';
+  var clean = titleLine
+    .replace(/\([^)]+\)/g, '')
+    .replace(/▼[^▼]*▼/g, '')
+    .replace(new RegExp(brand + '\\s*', 'gi'), '')
+    .replace(/\s+/g, ' ').trim();
   var txt = document.body.innerText;
   var rank = (txt.match(/([A-S])\s*ランク/) || [])[1] || '';
   var desc = (txt.match(/〈商品説明〉[\r\n]+([\s\S]*?)(?=\n♥|\n開始価格)/) || [])[1] || '';
