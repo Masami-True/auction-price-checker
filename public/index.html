@@ -63,44 +63,6 @@
   .condition-dot.A { background: var(--green); } .condition-dot.B { background: var(--orange); } .condition-dot.C { background: var(--red); }
   .damage-text { font-size: 12px; color: var(--text-dim); flex: 1; }
 
-  /* ===== Price Summary (NEW) ===== */
-  .price-summary {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-    padding: 24px; margin-bottom: 20px;
-  }
-  .price-summary h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
-  .price-summary-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px;
-  }
-  .summary-card {
-    background: var(--surface2); border-radius: 12px; padding: 16px; text-align: center;
-  }
-  .summary-card .label { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
-  .summary-card .value { font-size: 24px; font-weight: 800; }
-  .summary-card .source { font-size: 11px; color: var(--text-dim); margin-top: 6px; }
-  .summary-card .source a { color: var(--accent-light); text-decoration: none; }
-  .summary-card .source a:hover { text-decoration: underline; }
-  .summary-card.min .value { color: var(--green); }
-  .summary-card.max .value { color: var(--red); }
-  .summary-card.avg .value { color: var(--blue); }
-  .summary-card.median .value { color: var(--orange); }
-  .price-searching { text-align: center; padding: 20px; color: var(--text-dim); font-size: 14px; }
-  .price-searching .spinner { width: 28px; height: 28px; margin: 0 auto 8px; }
-
-  /* Site Breakdown */
-  .site-breakdown { margin-top: 16px; }
-  .site-row {
-    display: flex; align-items: center; gap: 12px; padding: 12px 16px;
-    background: var(--surface2); border-radius: 10px; margin-bottom: 8px;
-  }
-  .site-row .site-name-col { width: 120px; font-weight: 600; font-size: 13px; flex-shrink: 0; }
-  .site-row .site-count { font-size: 12px; color: var(--text-dim); width: 60px; flex-shrink: 0; }
-  .site-row .site-range { flex: 1; font-size: 14px; font-weight: 600; }
-  .site-row .site-range .low { color: var(--green); }
-  .site-row .site-range .high { color: var(--red); }
-  .site-row .site-error { color: var(--red); font-size: 12px; }
-  .site-row .site-empty { color: var(--text-dim); font-size: 12px; }
-
   /* Image Search */
   .image-search-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
   .image-search-section h2 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
@@ -188,34 +150,6 @@
   .bm-copy-btn:hover { background: var(--accent-light); color: var(--bg); }
   .bm-copy-btn.copied { background: var(--green); }
 
-  /* AI識別バッジ */
-  .ai-identified { font-size: 12px; background: rgba(108,92,231,0.12); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 14px; margin-bottom: 14px; color: var(--text-dim); }
-  .ai-identified strong { color: var(--accent-light); }
-
-  /* 仕入れ・販売目安 */
-  .buysell-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
-  .buysell-card { background: var(--surface2); border-radius: 12px; padding: 16px; text-align: center; position: relative; }
-  .buysell-card .bs-label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
-  .buysell-card .bs-value { font-size: 24px; font-weight: 800; }
-  .buysell-card.buy .bs-value { color: var(--blue); }
-  .buysell-card.sell .bs-value { color: var(--green); }
-  .buysell-card .bs-note { font-size: 11px; color: var(--text-dim); margin-top: 5px; line-height: 1.4; }
-  .buysell-card.retail { border-color: #0984e3; }
-  .buysell-card.sold { border-color: #6c5ce7; }
-  .ref-price-input-box { margin-top:16px; padding:14px 16px; background:var(--surface2); border-radius:12px; border:1px dashed var(--accent); }
-  .ref-price-label { font-size:12px; color:var(--accent-light); margin-bottom:10px; font-weight:600; }
-  .ref-price-row { display:flex; align-items:center; gap:8px; }
-  .ref-price-yen { font-size:18px; font-weight:700; color:var(--text); }
-  .ref-price-input { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:16px; color:var(--text); outline:none; max-width:180px; }
-  .ref-price-input:focus { border-color:var(--accent); }
-  .ref-price-btn { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
-  .ref-price-btn:hover { opacity:0.85; }
-  .ref-price-result { margin-top:12px; }
-  .bs-judgment { margin-top: 8px; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
-  .bs-judgment.best { background: rgba(0,184,148,0.2); color: #00b894; }
-  .bs-judgment.caution { background: rgba(253,203,110,0.2); color: #f9a825; }
-  .bs-judgment.over { background: rgba(225,112,85,0.2); color: #e17055; }
-
   @media (max-width: 600px) {
     .product-top { flex-direction: column; align-items: center; }
     .product-image { width: 160px; height: 160px; }
@@ -290,16 +224,6 @@
       </div>
       <div class="price-row" id="priceRow"></div>
       <div class="condition-bar" id="conditionBar"></div>
-    </div>
-
-    <!-- Price Summary (API results) -->
-    <div class="price-summary" id="priceSummary">
-      <h2>💰 市場価格サマリー</h2>
-      <div class="price-searching" id="priceSearching">
-        <div class="spinner"></div>
-        <div>各サイトから価格を取得中...（10〜20秒ほどかかります）</div>
-      </div>
-      <div id="priceSummaryContent" style="display:none;"></div>
     </div>
 
     <!-- Image Search -->
@@ -548,16 +472,9 @@ async function processFromBookmarklet(token) {
     resultDiv.style.display = 'block';
     window.history.replaceState({}, '', '/');
 
-    // ── AI商品識別 → 精密クエリで価格検索 ──
-    const searching = document.getElementById('priceSearching');
-    const content = document.getElementById('priceSummaryContent');
-    searching.style.display = 'block';
-    content.style.display = 'none';
-    searching.querySelector('div:last-child').textContent = 'AIが商品画像を解析中...（精密クエリを生成しています）';
-
+    // ── AI商品識別 → 検索リンク更新 ──
     let finalQuery = data.searchQuery;
     let finalPrecise = data.preciseQuery;
-    let aiInfo = null;
 
     // 画像が1枚以上あればAI識別を試みる
     if (data.images && data.images.length > 0) {
@@ -573,7 +490,6 @@ async function processFromBookmarklet(token) {
         });
         const aiData = await aiRes.json();
         if (aiData.success && aiData.searchQuery) {
-          aiInfo = aiData;
           finalQuery = aiData.searchQuery;
           finalPrecise = aiData.preciseQuery || aiData.searchQuery;
           // 検索リンクも更新
@@ -584,9 +500,6 @@ async function processFromBookmarklet(token) {
         console.log('AI識別スキップ:', e.message);
       }
     }
-
-    searching.querySelector('div:last-child').textContent = '各サイトから価格を取得中...（10〜20秒ほどかかります）';
-    searchPrices(finalQuery, finalPrecise, aiInfo);
   } catch (err) {
     alert('データ取得エラー: ' + err.message);
     dropZone.style.display = 'block';
@@ -628,197 +541,12 @@ async function processFile(file) {
 
     loading.style.display = 'none';
     resultDiv.style.display = 'block';
-
-    // 3) 価格検索を非同期で実行（広域クエリ＋精密クエリを両方送る）
-    searchPrices(data.searchQuery, data.preciseQuery);
   } catch (err) {
     console.error(err);
     alert('PDFの解析に失敗しました: ' + err.message);
     dropZone.style.display = 'block';
     loading.style.display = 'none';
   }
-}
-
-// ============================================================
-// 価格検索（サーバーAPIを呼ぶ）
-// ============================================================
-async function searchPrices(query, preciseQuery, aiInfo) {
-  const searching = document.getElementById('priceSearching');
-  const content = document.getElementById('priceSummaryContent');
-  searching.style.display = 'block';
-  content.style.display = 'none';
-
-  try {
-    const res = await fetch('/api/search-prices', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, preciseQuery }),
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error);
-    renderPriceSummary(data.results, query, preciseQuery, aiInfo);
-  } catch (e) {
-    content.innerHTML = `<div style="color:var(--red);text-align:center;padding:20px;">価格取得に失敗しました: ${e.message}<br>下の手動リンクから各サイトで確認してください。</div>`;
-    content.style.display = 'block';
-    searching.style.display = 'none';
-  }
-}
-
-function renderPriceSummary(results, query, preciseQuery, aiInfo) {
-  const searching = document.getElementById('priceSearching');
-  const content = document.getElementById('priceSummaryContent');
-  searching.style.display = 'none';
-
-  let html = '';
-
-  // AI識別結果バッジ
-  if (aiInfo && aiInfo.brand) {
-    const parts = [aiInfo.brand, aiInfo.model, aiInfo.color, aiInfo.material].filter(Boolean);
-    html += `<div class="ai-identified">✦ AI識別：<strong>${parts.join(' / ')}</strong></div>`;
-  }
-
-  // 使用クエリの表示
-  html += `<div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;padding:10px 14px;background:var(--surface2);border-radius:8px;">
-    📝 検索クエリ：<span style="color:var(--text);">${query}</span>
-    ${preciseQuery && preciseQuery !== query ? `／ 楽天・Yahoo: <span style="color:var(--accent-light);">${preciseQuery}</span>` : ''}
-  </div>`;
-  if (results.summary) {
-    const s = results.summary;
-    html += `<div class="price-summary-grid">
-      <div class="summary-card min">
-        <div class="label">最安値</div>
-        <div class="value">¥${s.minPrice.toLocaleString()}</div>
-        <div class="source"><a href="${s.minSource.url}" target="_blank">${s.minSource.site}</a></div>
-      </div>
-      <div class="summary-card max">
-        <div class="label">最高値</div>
-        <div class="value">¥${s.maxPrice.toLocaleString()}</div>
-        <div class="source"><a href="${s.maxSource.url}" target="_blank">${s.maxSource.site}</a></div>
-      </div>
-      <div class="summary-card avg">
-        <div class="label">平均価格</div>
-        <div class="value">¥${s.avgPrice.toLocaleString()}</div>
-        <div class="source">${s.totalItems}件のデータ</div>
-      </div>
-      <div class="summary-card median">
-        <div class="label">中央値</div>
-        <div class="value">¥${s.medianPrice.toLocaleString()}</div>
-        <div class="source">価格帯の中間</div>
-      </div>
-    </div>`;
-  } else {
-    html += '<div style="text-align:center;color:var(--text-dim);padding:16px;">自動取得できた価格データがありませんでした。下の手動リンクから各サイトで確認してください。</div>';
-  }
-
-  // サイト別内訳
-  html += '<div class="site-breakdown">';
-  results.sites.forEach(site => {
-    const prices = site.items.map(i => i.price).filter(p => p > 0);
-    const nameHtml = site.searchUrl
-      ? `<a href="${site.searchUrl}" target="_blank" rel="noopener" style="color:var(--accent-light);text-decoration:none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${site.site} ↗</a>`
-      : site.site;
-    html += `<div class="site-row">
-      <div class="site-name-col">${nameHtml}</div>`;
-    if (site.error) {
-      html += `<div class="site-error">取得失敗</div>`;
-    } else if (prices.length === 0) {
-      html += `<div class="site-empty">データなし</div>`;
-    } else {
-      const filteredPrices = prices.filter(p => p >= 1000);
-      const fMin = filteredPrices.length > 0 ? Math.min(...filteredPrices) : Math.min(...prices);
-      const fMax = filteredPrices.length > 0 ? Math.max(...filteredPrices) : Math.max(...prices);
-      html += `<div class="site-count">${filteredPrices.length}件</div>
-        <div class="site-range"><span class="low">¥${fMin.toLocaleString()}</span> 〜 <span class="high">¥${fMax.toLocaleString()}</span></div>`;
-    }
-    html += '</div>';
-  });
-  html += '</div>';
-
-  // 仕入れ判定セクション
-  if (results.summary) {
-    const s = results.summary;
-    const startPrice = window._currentData && parseInt(window._currentData.startPrice) || 0;
-
-    // 小売最安値ブロック
-    const retailBlock = s.retailMin
-      ? `<div class="buysell-card retail">
-          <div class="bs-label">🏪 小売最安値</div>
-          <div class="bs-value">¥${s.retailMin.toLocaleString()}</div>
-          <div class="bs-note">楽天・Yahooショッピング（新品・業者）</div>
-        </div>`
-      : '';
-
-    // 中古落札相場ブロック
-    const soldBlock = s.soldMedian
-      ? `<div class="buysell-card sold">
-          <div class="bs-label">🔨 中古落札相場</div>
-          <div class="bs-value">¥${s.soldMedian.toLocaleString()}</div>
-          <div class="bs-note">落札済${s.soldItemCount}件の中央値（¥${(s.soldMin||0).toLocaleString()}〜¥${(s.soldMax||0).toLocaleString()}）</div>
-        </div>`
-      : '';
-
-    // 仕入れ目安ブロック
-    let purchaseBlock = '';
-    if (s.purchaseTarget) {
-      let judgment = '';
-      if (startPrice > 0) {
-        if (startPrice <= s.purchaseTarget) {
-          judgment = `<div class="bs-judgment best">✅ BEST仕入れ（スタート¥${startPrice.toLocaleString()} ≤ 目安¥${s.purchaseTarget.toLocaleString()}）</div>`;
-        } else if (startPrice <= s.purchaseTarget * 1.5) {
-          judgment = `<div class="bs-judgment caution">⚠️ 要検討（スタート¥${startPrice.toLocaleString()} / 目安¥${s.purchaseTarget.toLocaleString()}）</div>`;
-        } else {
-          judgment = `<div class="bs-judgment over">❌ 高値（スタート¥${startPrice.toLocaleString()} > 目安¥${s.purchaseTarget.toLocaleString()}）</div>`;
-        }
-      }
-      purchaseBlock = `<div class="buysell-card buy">
-        <div class="bs-label">💴 仕入れ目安（MAX）</div>
-        <div class="bs-value">¥${s.purchaseTarget.toLocaleString()}</div>
-        <div class="bs-note">小売最安値（¥${s.retailMin.toLocaleString()}）の40%</div>
-        ${judgment}
-      </div>`;
-    } else if (s.soldMedian) {
-      // 小売データがない場合は落札相場の40%を目安に
-      const fallbackTarget = Math.round(s.soldMedian * 0.5);
-      let judgment = '';
-      if (startPrice > 0) {
-        if (startPrice <= fallbackTarget) {
-          judgment = `<div class="bs-judgment best">✅ BEST仕入れ（スタート¥${startPrice.toLocaleString()} ≤ 目安¥${fallbackTarget.toLocaleString()}）</div>`;
-        } else if (startPrice <= fallbackTarget * 1.5) {
-          judgment = `<div class="bs-judgment caution">⚠️ 要検討（スタート¥${startPrice.toLocaleString()} / 目安¥${fallbackTarget.toLocaleString()}）</div>`;
-        } else {
-          judgment = `<div class="bs-judgment over">❌ 高値（スタート¥${startPrice.toLocaleString()} > 目安¥${fallbackTarget.toLocaleString()}）</div>`;
-        }
-      }
-      purchaseBlock = `<div class="buysell-card buy">
-        <div class="bs-label">💴 仕入れ目安（参考）</div>
-        <div class="bs-value">¥${fallbackTarget.toLocaleString()}</div>
-        <div class="bs-note">落札相場中央値（¥${s.soldMedian.toLocaleString()}）の50%※小売データなし</div>
-        ${judgment}
-      </div>`;
-    }
-
-    html += `
-    <div class="buysell-row">
-      ${retailBlock}
-      ${soldBlock}
-      ${purchaseBlock}
-    </div>
-    <div style="font-size:11px;color:var(--text-dim);margin-top:8px;text-align:center;">
-      ※ 小売最安値×40%以下で仕入れられるとBEST。状態・付属品・需要により調整してください。
-    </div>
-    <div class="ref-price-input-box">
-      <div class="ref-price-label">📷 Google Lens・楽天で確認した小売価格を入力 → 仕入れ目安を即時更新</div>
-      <div class="ref-price-row">
-        <span class="ref-price-yen">¥</span>
-        <input id="refPriceInput" type="number" class="ref-price-input" placeholder="例: 120000" min="1000" step="1000">
-        <button class="ref-price-btn" onclick="applyRefPrice()">この価格で更新</button>
-      </div>
-      <div id="refPriceResult" class="ref-price-result"></div>
-    </div>`;
-  }
-
-  content.innerHTML = html;
-  content.style.display = 'block';
 }
 
 // ============================================================
@@ -935,51 +663,6 @@ function renderImageSearch(data, imageDataUrl) {
 // ============================================================
 // 手動検索リンク
 // ============================================================
-// ============================================================
-// 小売参考価格の手動入力 → 仕入れ目安をリアルタイム更新
-// ============================================================
-function applyRefPrice() {
-  const input = document.getElementById('refPriceInput');
-  const result = document.getElementById('refPriceResult');
-  const refPrice = parseInt(input.value);
-  if (!refPrice || refPrice < 1000) {
-    result.innerHTML = '<span style="color:var(--red);font-size:12px;">¥1,000以上の価格を入力してください</span>';
-    return;
-  }
-  const purchaseTarget = Math.round(refPrice * 0.4);
-  const startPrice = window._currentData && parseInt(window._currentData.startPrice) || 0;
-
-  let judgment = '';
-  let judgmentClass = '';
-  if (startPrice > 0) {
-    if (startPrice <= purchaseTarget) {
-      judgmentClass = 'best';
-      judgment = `✅ BEST仕入れ（スタート¥${startPrice.toLocaleString()} ≤ 目安¥${purchaseTarget.toLocaleString()}）`;
-    } else if (startPrice <= purchaseTarget * 1.5) {
-      judgmentClass = 'caution';
-      judgment = `⚠️ 要検討（スタート¥${startPrice.toLocaleString()} / 目安¥${purchaseTarget.toLocaleString()}）`;
-    } else {
-      judgmentClass = 'over';
-      judgment = `❌ 高値（スタート¥${startPrice.toLocaleString()} > 目安¥${purchaseTarget.toLocaleString()}）`;
-    }
-  }
-
-  result.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
-      <div class="buysell-card retail" style="padding:12px;">
-        <div class="bs-label">🏪 入力した小売価格</div>
-        <div class="bs-value">¥${refPrice.toLocaleString()}</div>
-        <div class="bs-note">Google Lens・楽天で確認した価格</div>
-      </div>
-      <div class="buysell-card buy" style="padding:12px;">
-        <div class="bs-label">💴 仕入れ目安（MAX）</div>
-        <div class="bs-value">¥${purchaseTarget.toLocaleString()}</div>
-        <div class="bs-note">小売価格（¥${refPrice.toLocaleString()}）の40%</div>
-        ${judgment ? `<div class="bs-judgment ${judgmentClass}">${judgment}</div>` : ''}
-      </div>
-    </div>`;
-}
-
 function renderSearchLinks(data) {
   const grid = document.getElementById('searchGrid');
   grid.innerHTML = '';
@@ -1042,16 +725,6 @@ async function analyzeImageAndSearch(imageDataUrl, btn) {
   btn.disabled = true;
   btn.innerHTML = `<div class="btn-icon" style="background:var(--accent);color:#fff;font-size:16px;">⏳</div><div class="btn-info"><div class="btn-name">AIが画像を解析中...</div><div class="btn-desc">ブランド・型番を特定しています</div></div>`;
 
-  // 価格サマリーをローディング状態に切り替え
-  const priceSummary = document.getElementById('priceSummary');
-  const searching = document.getElementById('priceSearching');
-  const content = document.getElementById('priceSummaryContent');
-  priceSummary.querySelector('h2').textContent = '💰 市場価格サマリー（AI画像解析）';
-  searching.style.display = 'block';
-  searching.querySelector('div:last-child').textContent = 'AIが商品を特定中...（10〜20秒ほどかかります）';
-  content.style.display = 'none';
-  priceSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
   try {
     const res = await fetch(getImageFetchUrl(imageDataUrl));
     const blob = await res.blob();
@@ -1062,16 +735,10 @@ async function analyzeImageAndSearch(imageDataUrl, btn) {
     const data = await apiRes.json();
     if (!data.success) throw new Error(data.error);
 
-    // 特定されたクエリを表示してから価格サマリーを描画
-    priceSummary.querySelector('h2').innerHTML = `💰 市場価格サマリー（AI画像解析）<br><span style="font-size:12px;font-weight:400;color:var(--accent-light);">検索クエリ: ${data.query}</span>`;
-    renderPriceSummary(data.results);
-
     btn.innerHTML = `<div class="btn-icon" style="background:var(--green);color:#fff;font-size:16px;">✓</div><div class="btn-info"><div class="btn-name">解析完了</div><div class="btn-desc">検索クエリ: ${data.query}</div></div>`;
     btn.disabled = false;
   } catch (e) {
-    content.innerHTML = `<div style="color:var(--red);text-align:center;padding:20px;">AI解析に失敗しました: ${e.message}</div>`;
-    content.style.display = 'block';
-    searching.style.display = 'none';
+    alert('AI解析に失敗しました: ' + e.message);
     btn.disabled = false;
     btn.innerHTML = originalHtml;
   }
