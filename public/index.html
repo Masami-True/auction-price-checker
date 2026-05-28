@@ -108,6 +108,19 @@
   .google-bg { background: #4285f4; color: #fff; }
   .aucfan-bg { background: #0099cc; color: #fff; }
 
+  .ref-price-box { margin: 16px 0; padding: 14px 16px; background: var(--surface); border: 1px dashed var(--accent); border-radius: 12px; }
+  .ref-price-label { font-size: 12px; color: var(--accent-light); margin-bottom: 10px; font-weight: 600; }
+  .ref-price-row { display: flex; align-items: center; gap: 8px; }
+  .ref-price-yen { font-size: 18px; font-weight: 700; color: var(--text); }
+  .ref-price-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 16px; color: var(--text); outline: none; max-width: 180px; }
+  .ref-price-input:focus { border-color: var(--accent); }
+  .ref-price-btn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .ref-price-btn:hover { opacity: 0.85; }
+  #refPriceResult { margin-top: 10px; font-size: 14px; }
+  .ref-result-best { color: #00b894; font-weight: 700; }
+  .ref-result-caution { color: #fdcb6e; font-weight: 700; }
+  .ref-result-over { color: var(--red); font-weight: 700; }
+
   .reset-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 20px; color: var(--text); font-size: 14px; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
   .reset-btn:hover { border-color: var(--accent); }
 
@@ -243,6 +256,17 @@
       <h2>🔍 各サイトで確認する</h2>
       <p>各サイトで現在の販売価格・相場を確認できます（新しいタブで開きます）</p>
       <div class="search-grid" id="searchGrid"></div>
+    </div>
+
+    <!-- 小売参考価格入力 -->
+    <div class="ref-price-box">
+      <div class="ref-price-label">📷 Google Lens・楽天で確認した小売価格を入力 → 仕入れ目安を即時更新</div>
+      <div class="ref-price-row">
+        <span class="ref-price-yen">¥</span>
+        <input id="refPriceInput" type="number" class="ref-price-input" placeholder="例: 120000" min="1000" step="1000">
+        <button class="ref-price-btn" onclick="applyRefPrice()">この価格で更新</button>
+      </div>
+      <div id="refPriceResult"></div>
     </div>
 
     <button class="reset-btn" id="resetBtn">← 別の商品を読み込む</button>
@@ -662,6 +686,32 @@ function renderImageSearch(data, imageDataUrl) {
 
 // ============================================================
 // 手動検索リンク
+// ============================================================
+// 小売参考価格入力 → 仕入れ目安計算
+// ============================================================
+function applyRefPrice() {
+  const input = document.getElementById('refPriceInput');
+  const result = document.getElementById('refPriceResult');
+  const refPrice = parseInt(input.value);
+  if (!refPrice || refPrice < 1000) {
+    result.innerHTML = '<span style="color:var(--red);">¥1,000以上の価格を入力してください</span>';
+    return;
+  }
+  const target = Math.round(refPrice * 0.4);
+  const startPrice = window._currentData && parseInt(window._currentData.startPrice) || 0;
+  let judgment = '';
+  if (startPrice > 0) {
+    if (startPrice <= target) {
+      judgment = `<span class="ref-result-best">✅ BEST仕入れ（スタート¥${startPrice.toLocaleString()} ≤ 目安¥${target.toLocaleString()}）</span>`;
+    } else if (startPrice <= target * 1.5) {
+      judgment = `<span class="ref-result-caution">⚠️ 要検討（スタート¥${startPrice.toLocaleString()} / 目安¥${target.toLocaleString()}）</span>`;
+    } else {
+      judgment = `<span class="ref-result-over">❌ 高値（スタート¥${startPrice.toLocaleString()} > 目安¥${target.toLocaleString()}）</span>`;
+    }
+  }
+  result.innerHTML = `小売¥${refPrice.toLocaleString()} × 40% = <strong>仕入れ目安 ¥${target.toLocaleString()}</strong>${judgment ? '　' + judgment : ''}`;
+}
+
 // ============================================================
 function renderSearchLinks(data) {
   const grid = document.getElementById('searchGrid');
